@@ -2319,16 +2319,23 @@ class BasePlatformAdapter(ABC):
         """Return True if the owner task for ``session_key`` is done/cancelled.
 
         A lock is "stale" when the adapter still has ``_active_sessions[key]``
-        AND a known owner task in ``_session_tasks`` that has already exited.
-        When there is no owner task at all, that usually means the guard was
-        installed by some path other than handle_message() (tests sometimes
-        install guards directly) — don't treat that as stale.  The on-entry
-        self-heal only needs to handle the production split-brain case where
-        an owner task was recorded, then exited without clearing its guard.
+        AND either:
+          1. A known owner task in ``_session_tasks`` that has already exited, OR
+          2. NO owner task at all AND no pending message (true split-brain:
+             the guard entry exists but nothing is actually processing anything)
+
+        Case 2 fixes the "infinite Interrupting current task" loop described in
+        issue #11016: guard still present, no task running, no queued message.
+        Without this, the user is trapped until gateway restart.
         """
         task = self._session_tasks.get(session_key)
         if task is None:
-            return False
+            # Split-brain case: guard exists in _active_sessions, but no
+            # owner task AND no pending message → definitely stale
+            # (If there IS a pending message, don't treat as stale — it may
+            # be in the late-arrival drain window between task exit and
+            # spawning the next processing task.)
+            return session_key not in self._pending_messages
         done = getattr(task, "done", None)
         return bool(done and done())
 
