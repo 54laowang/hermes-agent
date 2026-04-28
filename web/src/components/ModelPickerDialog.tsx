@@ -96,6 +96,7 @@ export function ModelPickerDialog(props: Props) {
       : (gw as GatewayClient).request<ModelOptionsResponse>(
           "model.options",
           sessionId ? { session_id: sessionId } : {},
+          30_000, // 30 second timeout for model options - faster UX
         );
 
     promise
@@ -113,9 +114,21 @@ export function ModelPickerDialog(props: Props) {
       })
       .catch((e) => {
         if (closedRef.current) return;
-        setError(e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        // Provide friendlier message for timeouts
+        if (msg.includes("timeout") || msg.includes("timed out")) {
+          setError("Network timeout — check your connection or try again");
+        } else {
+          setError(msg);
+        }
         setLoading(false);
       });
+  };
+
+  // Load providers + models on open.
+  useEffect(() => {
+    closedRef.current = false;
+    loadProviders();
 
     return () => {
       closedRef.current = true;
@@ -329,7 +342,19 @@ function ProviderColumn({
         </div>
       )}
 
-      {error && <div className="p-4 text-xs text-destructive">{error}</div>}
+      {error && (
+        <div className="p-4">
+          <div className="text-xs text-destructive mb-3">{error}</div>
+          <button
+            type="button"
+            onClick={loadProviders}
+            disabled={loading}
+            className="text-xs px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded transition-colors disabled:opacity-50"
+          >
+            {loading ? "Loading…" : "Retry"}
+          </button>
+        </div>
+      )}
 
       {!loading && !error && providers.length === 0 && (
         <div className="p-4 text-xs text-muted-foreground italic">

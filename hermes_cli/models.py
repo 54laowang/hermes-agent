@@ -2993,7 +2993,7 @@ def fetch_ollama_cloud_models(
 
     live_models: list[str] = []
     if api_key:
-        result = fetch_api_models(api_key, base_url, timeout=8.0)
+        result = fetch_api_models(api_key, base_url, timeout=5.0)  # Short timeout for interactive UX
         if result:
             live_models = result
 
