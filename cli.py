@@ -32,7 +32,6 @@ import re
 import concurrent.futures
 import base64
 import atexit
-import errno
 import tempfile
 import time
 import uuid
@@ -496,11 +495,6 @@ def load_cli_config() -> Dict[str, Any]:
             "provider": "",    # Subagent provider override (empty = inherit parent provider)
             "base_url": "",    # Direct OpenAI-compatible endpoint for subagents
             "api_key": "",     # API key for delegation.base_url (falls back to OPENAI_API_KEY)
-        },
-        "onboarding": {
-            # First-touch hint flags (see agent/onboarding.py).  Each hint is
-            # shown once per install then latched here.
-            "seen": {},
         },
     }
     
@@ -2881,6 +2875,43 @@ def _resolve_attachment_path(raw_path: str) -> Path | None:
     return resolved
 
 
+def _format_process_notification(evt: dict) -> "str | None":
+    """Format a process notification event into a [SYSTEM: ...] message.
+
+    Handles both completion events (notify_on_complete) and watch pattern
+    match events from the unified completion_queue.
+    """
+    evt_type = evt.get("type", "completion")
+    _sid = evt.get("session_id", "unknown")
+    _cmd = evt.get("command", "unknown")
+
+    if evt_type == "watch_disabled":
+        return f"[SYSTEM: {evt.get('message', '')}]"
+
+    if evt_type == "watch_match":
+        _pat = evt.get("pattern", "?")
+        _out = evt.get("output", "")
+        _sup = evt.get("suppressed", 0)
+        text = (
+            f"[SYSTEM: Background process {_sid} matched "
+            f"watch pattern \"{_pat}\".\n"
+            f"Command: {_cmd}\n"
+            f"Matched output:\n{_out}"
+        )
+        if _sup:
+            text += f"\n({_sup} earlier matches were suppressed by rate limit)"
+        text += "]"
+        return text
+
+    # Default: completion event
+    _exit = evt.get("exit_code", "?")
+    _out = evt.get("output", "")
+    return (
+        f"[SYSTEM: Background process {_sid} completed "
+        f"(exit code {_exit}).\n"
+        f"Command: {_cmd}\n"
+        f"Output:\n{_out}]"
+    )
 
 
 
@@ -6660,7 +6691,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Hermes!{_RST}")
         _cprint(f"  {_DIM}Multi-line: Alt+Enter for a new line{_RST}")
-        _cprint(f"  {_DIM}Draft editor: Ctrl+G (Alt+G in VSCode/Cursor){_RST}")
+        _cprint(f"  {_DIM}Draft editor: Ctrl+G{_RST}")
         if _is_termux_environment():
             _cprint(f"  {_DIM}Attach image: /image {_termux_example_image_path()} or start your prompt with a local image path{_RST}\n")
         else:
@@ -7918,9 +7949,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         _cprint(f"  ✓ Model switched: {result.new_model}")
         _cprint(f"    Provider: {provider_label}")
 
-        # Context: always resolve via the provider-aware chain so Codex OAuth,
-        # Copilot, and Nous-enforced caps win over the raw models.dev entry
-        # (e.g. gpt-5.5 is 1.05M on openai but 272K on Codex OAuth).
         mi = result.model_info
         try:
             from hermes_cli.model_switch import resolve_display_context_length
@@ -7938,9 +7966,23 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         except Exception:
             pass
         if mi:
+            if mi.context_window:
+                _cprint(f"    Context: {mi.context_window:,} tokens")
             if mi.max_output:
                 _cprint(f"    Max output: {mi.max_output:,} tokens")
             _cprint(f"    Capabilities: {mi.format_capabilities()}")
+        else:
+            try:
+                from agent.model_metadata import get_model_context_length
+                ctx = get_model_context_length(
+                    result.new_model,
+                    base_url=result.base_url or self.base_url,
+                    api_key=result.api_key or self.api_key,
+                    provider=result.target_provider,
+                )
+                _cprint(f"    Context: {ctx:,} tokens")
+            except Exception:
+                pass
 
         cache_enabled = (
             (base_url_host_matches(result.base_url or "", "openrouter.ai") and "claude" in result.new_model.lower())
@@ -8078,7 +8120,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
             except Exception:
                 pass
 
-        # Single inventory context — replaces the inline config-slice the
+# Single inventory context — replaces the inline config-slice the
         # dashboard / TUI used to duplicate. Overlay live session state
         # via with_overrides (truthy-only) so empty self.* attrs don't
         # clobber disk config.
@@ -8098,10 +8140,21 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         user_provs = ctx.user_providers if ctx is not None else None
         custom_provs = ctx.custom_providers if ctx is not None else None
 
+
         # No args at all: open prompt_toolkit-native picker modal
         if not model_input and not explicit_provider:
             model_display = self.model or "unknown"
             provider_display = get_label(self.provider) if self.provider else "unknown"
+
+            user_provs = None
+            custom_provs = None
+            try:
+                from hermes_cli.config import get_compatible_custom_providers, load_config
+                cfg = load_config()
+                user_provs = cfg.get("providers")
+                custom_provs = get_compatible_custom_providers(cfg)
+            except Exception:
+                pass
 
             try:
                 if ctx is None:
@@ -8836,6 +8889,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self._handle_journey_command(cmd_original)
         elif canonical == "background":
             self._handle_background_command(cmd_original)
+        elif canonical == "btw":
+            self._handle_btw_command(cmd_original)
         elif canonical == "queue":
             # Extract prompt after "/queue " or "/q "
             parts = cmd_original.split(None, 1)
@@ -9095,6 +9150,265 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         
         return True
     
+
+    def _handle_background_command(self, cmd: str):
+        """Handle /background <prompt> — run a prompt in a separate background session.
+
+        Spawns a new AIAgent in a background thread with its own session.
+        When it completes, prints the result to the CLI without modifying
+        the active session's conversation history.
+        """
+        parts = cmd.strip().split(maxsplit=1)
+        if len(parts) < 2 or not parts[1].strip():
+            _cprint("  Usage: /background <prompt>")
+            _cprint("  Example: /background Summarize the top HN stories today")
+            _cprint("  The task runs in a separate session and results display here when done.")
+            return
+
+        prompt = parts[1].strip()
+        self._background_task_counter += 1
+        task_num = self._background_task_counter
+        task_id = f"bg_{datetime.now().strftime('%H%M%S')}_{uuid.uuid4().hex[:6]}"
+
+        # Make sure we have valid credentials
+        if not self._ensure_runtime_credentials():
+            _cprint("  (>_<) Cannot start background task: no valid credentials.")
+            return
+
+        _cprint(f"  🔄 Background task #{task_num} started: \"{prompt[:60]}{'...' if len(prompt) > 60 else ''}\"")
+        _cprint(f"  Task ID: {task_id}")
+        _cprint("  You can continue chatting — results will appear when done.\n")
+
+        turn_route = self._resolve_turn_agent_config(prompt)
+
+        def run_background():
+            try:
+                bg_agent = AIAgent(
+                    model=turn_route["model"],
+                    api_key=turn_route["runtime"].get("api_key"),
+                    base_url=turn_route["runtime"].get("base_url"),
+                    provider=turn_route["runtime"].get("provider"),
+                    api_mode=turn_route["runtime"].get("api_mode"),
+                    acp_command=turn_route["runtime"].get("command"),
+                    acp_args=turn_route["runtime"].get("args"),
+                    max_tokens=turn_route["runtime"].get("max_tokens"),
+                    max_iterations=self.max_turns,
+                    enabled_toolsets=self.enabled_toolsets,
+                    quiet_mode=True,
+                    verbose_logging=False,
+                    session_id=task_id,
+                    platform="cli",
+                    session_db=self._session_db,
+                    reasoning_config=self.reasoning_config,
+                    service_tier=self.service_tier,
+                    request_overrides=turn_route.get("request_overrides"),
+                    providers_allowed=self._providers_only,
+                    providers_ignored=self._providers_ignore,
+                    providers_order=self._providers_order,
+                    provider_sort=self._provider_sort,
+                    provider_require_parameters=self._provider_require_params,
+                    provider_data_collection=self._provider_data_collection,
+                    openrouter_min_coding_score=self._openrouter_min_coding_score,
+                    fallback_model=self._fallback_model,
+                )
+                # Silence raw spinner; route thinking through TUI widget when no foreground agent is active.
+                bg_agent._print_fn = lambda *_a, **_kw: None
+
+                def _bg_thinking(text: str) -> None:
+                    # Concurrent bg tasks may race on _spinner_text; acceptable for best-effort UI.
+                    if not self._agent_running:
+                        self._spinner_text = text
+                        if self._app:
+                            self._app.invalidate()
+
+                bg_agent.thinking_callback = _bg_thinking
+
+                result = bg_agent.run_conversation(
+                    user_message=prompt,
+                    task_id=task_id,
+                )
+
+                response = result.get("final_response", "") if result else ""
+                if not response and result and result.get("error"):
+                    response = f"Error: {result['error']}"
+
+                # Display result in the CLI (thread-safe via patch_stdout).
+                # Force a TUI refresh first so spinner/status bar don't overlap
+                # with the output (fixes #2718).
+                if self._app:
+                    self._app.invalidate()
+                    time.sleep(0.05)  # brief pause for refresh
+                print()
+                ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
+                _cprint(f"  ✅ Background task #{task_num} complete")
+                _cprint(f"  Prompt: \"{prompt[:60]}{'...' if len(prompt) > 60 else ''}\"")
+                ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
+                if response:
+                    try:
+                        from hermes_cli.skin_engine import get_active_skin
+                        _skin = get_active_skin()
+                        label = _skin.get_branding("response_label", "⚕ Hermes")
+                        _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
+                        _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
+                    except Exception:
+                        label = "⚕ Hermes"
+                        _resp_color = "#CD7F32"
+                        _resp_text = "#FFF8DC"
+
+                    _chat_console = ChatConsole()
+                    _chat_console.print(Panel(
+                        _render_final_assistant_content(response, mode=self.final_response_markdown),
+                        title=f"[{_resp_color} bold]{label} (background #{task_num})[/]",
+                        title_align="left",
+                        border_style=_resp_color,
+                        style=_resp_text,
+                        box=rich_box.HORIZONTALS,
+                        padding=(1, 4),
+                        width=self._scrollback_box_width(),
+                    ))
+                else:
+                    _cprint("  (No response generated)")
+
+                # Play bell if enabled
+                if self.bell_on_complete:
+                    sys.stdout.write("\a")
+                    sys.stdout.flush()
+
+            except Exception as e:
+                # Same TUI refresh pattern as success path (#2718)
+                if self._app:
+                    self._app.invalidate()
+                    time.sleep(0.05)
+                print()
+                _cprint(f"  ❌ Background task #{task_num} failed: {e}")
+            finally:
+                self._background_tasks.pop(task_id, None)
+                # Clear spinner only if no foreground agent owns it
+                if not self._agent_running:
+                    self._spinner_text = ""
+                if self._app:
+                    self._invalidate(min_interval=0)
+
+        thread = threading.Thread(target=run_background, daemon=True, name=f"bg-task-{task_id}")
+        self._background_tasks[task_id] = thread
+        thread.start()
+
+
+    def _handle_btw_command(self, cmd: str):
+        """Handle /btw <question> — ephemeral side question using session context.
+
+        Snapshots the current conversation history, spawns a no-tools agent in
+        a background thread, and prints the answer without persisting anything
+        to the main session.
+        """
+        parts = cmd.strip().split(maxsplit=1)
+        if len(parts) < 2 or not parts[1].strip():
+            _cprint("  Usage: /btw <question>")
+            _cprint("  Example: /btw what module owns session title sanitization?")
+            _cprint("  Answers using session context. No tools, not persisted.")
+            return
+
+        question = parts[1].strip()
+        task_id = f"btw_{datetime.now().strftime('%H%M%S')}_{uuid.uuid4().hex[:6]}"
+
+        if not self._ensure_runtime_credentials():
+            _cprint("  (>_<) Cannot start /btw: no valid credentials.")
+            return
+
+        turn_route = self._resolve_turn_agent_config(question)
+        history_snapshot = list(self.conversation_history)
+
+        preview = question[:60] + ("..." if len(question) > 60 else "")
+        _cprint(f'  💬 /btw: "{preview}"')
+
+        def run_btw():
+            try:
+                btw_agent = AIAgent(
+                    model=turn_route["model"],
+                    api_key=turn_route["runtime"].get("api_key"),
+                    base_url=turn_route["runtime"].get("base_url"),
+                    provider=turn_route["runtime"].get("provider"),
+                    api_mode=turn_route["runtime"].get("api_mode"),
+                    acp_command=turn_route["runtime"].get("command"),
+                    acp_args=turn_route["runtime"].get("args"),
+                    max_iterations=8,
+                    enabled_toolsets=[],
+                    quiet_mode=True,
+                    verbose_logging=False,
+                    session_id=task_id,
+                    platform="cli",
+                    reasoning_config=self.reasoning_config,
+                    service_tier=self.service_tier,
+                    request_overrides=turn_route.get("request_overrides"),
+                    providers_allowed=self._providers_only,
+                    providers_ignored=self._providers_ignore,
+                    providers_order=self._providers_order,
+                    provider_sort=self._provider_sort,
+                    provider_require_parameters=self._provider_require_params,
+                    provider_data_collection=self._provider_data_collection,
+                    fallback_model=self._fallback_model,
+                    session_db=None,
+                    skip_memory=True,
+                    skip_context_files=True,
+                    persist_session=False,
+                )
+
+                btw_prompt = (
+                    "[Ephemeral /btw side question. Answer using the conversation "
+                    "context. No tools available. Be direct and concise.]\n\n"
+                    + question
+                )
+                result = btw_agent.run_conversation(
+                    user_message=btw_prompt,
+                    conversation_history=history_snapshot,
+                    task_id=task_id,
+                )
+
+                response = (result.get("final_response") or "") if result else ""
+                if not response and result and result.get("error"):
+                    response = f"Error: {result['error']}"
+
+                # TUI refresh before printing
+                if self._app:
+                    self._app.invalidate()
+                    time.sleep(0.05)
+                print()
+
+                if response:
+                    try:
+                        from hermes_cli.skin_engine import get_active_skin
+                        _skin = get_active_skin()
+                        _resp_color = _skin.get_color("response_border", "#4F6D4A")
+                    except Exception:
+                        _resp_color = "#4F6D4A"
+
+                    ChatConsole().print(Panel(
+                        _render_final_assistant_content(response, mode=self.final_response_markdown),
+                        title=f"[{_resp_color} bold]⚕ /btw[/]",
+                        title_align="left",
+                        border_style=_resp_color,
+                        box=rich_box.HORIZONTALS,
+                        padding=(1, 4),
+                    ))
+                else:
+                    _cprint("  💬 /btw: (no response)")
+
+                if self.bell_on_complete:
+                    sys.stdout.write("\a")
+                    sys.stdout.flush()
+
+            except Exception as e:
+                if self._app:
+                    self._app.invalidate()
+                    time.sleep(0.05)
+                print()
+                _cprint(f"  ❌ /btw failed: {e}")
+            finally:
+                if self._app:
+                    self._invalidate(min_interval=0)
+
+        thread = threading.Thread(target=run_btw, daemon=True, name=f"btw-{task_id}")
+        thread.start()
 
     @staticmethod
     def _try_launch_chrome_debug(port: int, system: str) -> bool:
@@ -10822,7 +11136,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
             change_detail = ". ".join(change_parts) + ". " if change_parts else ""
             self.conversation_history.append({
                 "role": "user",
-                "content": f"[IMPORTANT: MCP servers have been reloaded. {change_detail}{tool_summary}. The tool list for this conversation has been updated accordingly.]",
+                "content": f"[SYSTEM: MCP servers have been reloaded. {change_detail}{tool_summary}. The tool list for this conversation has been updated accordingly.]",
             })
 
             # Persist session immediately so the session log reflects the
@@ -11025,31 +11339,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     from agent.display import get_cute_tool_message
                     line = get_cute_tool_message(function_name, stored_args, duration, result=kwargs.get("result"))
                     _cprint(f"  {line}")
-                except Exception:
-                    pass
-                # First-touch onboarding: on the first tool in this process
-                # that takes longer than the threshold while we're in the
-                # noisiest progress mode, print a one-time hint about
-                # /verbose.  Latched on self so it fires at most once per
-                # process; persisted to config.yaml so it never fires again
-                # across processes either.
-                try:
-                    if (
-                        not getattr(self, "_long_tool_hint_fired", False)
-                        and self.tool_progress_mode == "all"
-                        and duration >= 30.0
-                    ):
-                        from agent.onboarding import (
-                            TOOL_PROGRESS_FLAG,
-                            is_seen,
-                            mark_seen,
-                            tool_progress_hint_cli,
-                        )
-                        if not is_seen(CLI_CONFIG, TOOL_PROGRESS_FLAG):
-                            self._long_tool_hint_fired = True
-                            _cprint(f"  {_DIM}{tool_progress_hint_cli()}{_RST}")
-                            mark_seen(_hermes_home / "config.yaml", TOOL_PROGRESS_FLAG)
-                            CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[TOOL_PROGRESS_FLAG] = True
                 except Exception:
                     pass
             self._invalidate()
@@ -13555,24 +13844,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                                          f"agent_running={self._agent_running}\n")
                         except Exception:
                             pass
-                    # First-touch onboarding: on the very first busy-while-running
-                    # event for this install, print a one-line tip explaining the
-                    # /busy knob.  Flag persists to config.yaml and never fires
-                    # again.  Guarded for exceptions so onboarding can't break
-                    # the input loop.
-                    try:
-                        from agent.onboarding import (
-                            BUSY_INPUT_FLAG,
-                            busy_input_hint_cli,
-                            is_seen,
-                            mark_seen,
-                        )
-                        if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
-                            _cprint(f"  {_DIM}{busy_input_hint_cli(self.busy_input_mode)}{_RST}")
-                            mark_seen(_hermes_home / "config.yaml", BUSY_INPUT_FLAG)
-                            CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
-                    except Exception:
-                        pass
                 else:
                     self._pending_input.put(payload)
                 event.app.current_buffer.reset(append_to_history=True)
@@ -13606,18 +13877,14 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 """
                 event.current_buffer.insert_text('\n')
 
-        # VSCode/Cursor bind Ctrl+G to "Find Next" at the editor level, so
-        # the keystroke never reaches the embedded terminal. Alt+G is unbound
-        # in those IDEs and arrives here as ('escape', 'g') — register it as
-        # a fallback so the editor handoff works inside Cursor/VSCode too.
-        _editor_filter = Condition(
-            lambda: not self._clarify_state and not self._approval_state and not self._sudo_state and not self._secret_state
+        @kb.add(
+            'c-g',
+            filter=Condition(
+                lambda: not self._clarify_state and not self._approval_state and not self._sudo_state and not self._secret_state
+            ),
         )
-
-        @kb.add('c-g', filter=_editor_filter)
-        @kb.add('escape', 'g', filter=_editor_filter)
         def handle_open_in_editor(event):
-            """Ctrl+G (or Alt+G in VSCode/Cursor) opens the current draft in an external editor."""
+            """Ctrl+G opens the current draft in an external editor."""
             cli_ref._open_external_editor(event.current_buffer)
 
         @kb.add('tab', eager=True)
@@ -14262,11 +14529,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 completer=_completer,
             ),
         )
-        # Keep prompt_toolkit on its simple tempfile path. Setting
-        # buffer.tempfile = "prompt.md" triggers its complex-tempfile branch,
-        # which tries to mkdir() the mkdtemp() directory again and raises
-        # EEXIST. The suffix keeps markdown highlighting without that bug.
-        input_area.buffer.tempfile_suffix = '.md'
 
         # Dynamic height: accounts for both explicit newlines AND visual
         # wrapping of long lines so the input area always fits its content.
@@ -14399,7 +14661,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 status = cli_ref._command_status or "Processing command..."
                 return f"{frame} {status}"
             if cli_ref._agent_running:
-                return "msg=interrupt · /queue · /bg · /steer · Ctrl+C cancel"
+                return "type a message + Enter to interrupt, Ctrl+C to cancel"
             if cli_ref._voice_mode:
                 _label = cli_ref._voice_record_key_label()
                 return f"type or {_label} to record"
@@ -15501,8 +15763,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 return  # silently suppress
             if isinstance(exc, KeyError) and "is not registered" in str(exc):
                 return  # suppress selector registration failures (#6393)
-            if isinstance(exc, OSError) and getattr(exc, "errno", None) == errno.EIO:
-                return  # suppress I/O errors from broken stdout on interrupt (#13710)
             # Fall back to default handler for everything else
             loop.default_exception_handler(context)
 
@@ -15568,7 +15828,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         except (EOFError, KeyboardInterrupt, BrokenPipeError):
             pass
         except (KeyError, OSError) as _stdin_err:
-            # Catch selector registration failures from broken stdin (#6393)
+# Catch selector registration failures from broken stdin (#6393)
             # and I/O errors from broken stdout during interrupt (#13710).
             _errno = getattr(_stdin_err, "errno", None) if isinstance(_stdin_err, OSError) else None
             _msg = str(_stdin_err)
@@ -15586,6 +15846,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     "where kqueue cannot register fd 0.\n"
                     "Try reinstalling Python via pyenv or Homebrew, then re-run: hermes setup"
                 )
+
             else:
                 raise
         finally:
