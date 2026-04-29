@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-自动更新 README_CN.md 的更新日志部分
+自动更新 README.md 的更新日志部分
 使用方法: python3 update_readme.py "更新内容描述"
 """
 
@@ -9,11 +9,11 @@ from datetime import datetime
 from pathlib import Path
 
 def update_readme(description: str):
-    """更新 README_CN.md 的更新日志"""
-    readme_path = Path(__file__).parent.parent / "README_CN.md"
+    """更新 README.md 的更新日志"""
+    readme_path = Path(__file__).parent.parent / "README.md"
     
     if not readme_path.exists():
-        print(f"❌ README_CN.md 不存在: {readme_path}")
+        print(f"❌ README.md 不存在: {readme_path}")
         return False
     
     # 读取现有内容
