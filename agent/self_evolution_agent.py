@@ -21,11 +21,11 @@ from typing import Dict, List, Optional, Tuple, Any
 from collections import defaultdict
 
 # Import all components
-from self_evolution_feedback import FeedbackCaptureEngine, InteractionRecord
-from self_evolution_mining import PatternMiningEngine, DiscoveredPattern
-from self_evolution_optimizer import RuleOptimizer, OptimizationAction
-from self_evolution_healing import SelfHealingEngine, HealthStatus
-from self_evolution_predictor import IntentPredictor, Prediction
+from agent.self_evolution_feedback import FeedbackCaptureEngine, InteractionRecord
+from agent.self_evolution_mining import PatternMiningEngine, DiscoveredPattern
+from agent.self_evolution_optimizer import RuleOptimizer, OptimizationAction
+from agent.self_evolution_healing import SelfHealingEngine, HealthStatus
+from agent.self_evolution_predictor import IntentPredictor, Prediction
 
 
 @dataclass
