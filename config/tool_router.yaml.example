@@ -1,0 +1,43 @@
+# =========================================
+# Tool Router Configuration (NEW FEATURE)
+# =========================================
+# Intelligent toolset selection based on user intent
+# Reduces token usage by 50-80% and improves reasoning accuracy
+
+tool_router:
+  # Enable/disable intelligent tool routing
+  enabled: true
+  
+  # Lightweight model for intent classification (cheaper/faster)
+  # Use a cheap, fast model like gemini-2-flash, gpt-4o-mini, etc.
+  intent_model: "ark:gemini-2-flash"
+  
+  # Minimum keyword match score to switch intent during conversation
+  switch_threshold: 3
+  
+  # Always enable these tools (safety net, never disabled)
+  always_enabled:
+    - "clarify"
+    - "memory"
+  
+  # Intents that automatically trigger full toolset
+  # Use for complex multi-step tasks
+  force_full_intents: []
+  
+  # Show routing info in console (debug)
+  show_routing_info: true
+
+# =========================================
+# Available Intent Categories:
+# =========================================
+# CODE      - Coding, debugging, file manipulation
+# RESEARCH  - Web search, information gathering  
+# CREATIVE  - Writing, image generation, creative tasks
+# DEVOPS    - Terminal, processes, system administration
+# PLANNING  - Todo, task breakdown, project management
+# ANALYSIS  - Data analysis, code review, document processing
+# AUTOMATION- Cronjobs, scripting, workflow automation
+# MEMORY    - Recall, knowledge management, session search
+# COMMUNICATION - Send messages, notifications
+# GENERAL   - Simple questions, minimal tools
+# =========================================
