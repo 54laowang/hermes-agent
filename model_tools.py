@@ -709,6 +709,24 @@ def handle_function_call(
         if function_name in _AGENT_LOOP_TOOLS:
             return json.dumps({"error": f"{function_name} must be handled by the agent loop"})
 
+        # Permission policy enforcement - centralized check for all dispatch paths
+        # This ensures delegate_task, batch_runner, cron, and other paths all
+        # go through the same permission boundary before tool execution.
+        try:
+            from tools.permission_policy import enforce_permission_policy
+            permission_error = enforce_permission_policy(
+                function_name,
+                function_args,
+                session_id=session_id,
+                enabled_tools=enabled_tools,
+            )
+            if permission_error is not None:
+                logger.warning(f"Permission denied for tool '{function_name}': {permission_error}")
+                return json.dumps({"error": permission_error}, ensure_ascii=False)
+        except Exception as perm_exc:
+            # Permission system unavailable - allow but log
+            logger.debug(f"Permission check failed (allowing tool): {perm_exc}")
+
         # Check plugin hooks for a block directive (unless caller already
         # checked — e.g. run_agent._invoke_tool passes skip=True to
         # avoid double-firing the hook).
