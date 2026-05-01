@@ -82,6 +82,32 @@
 
 ## 📋 更新日志
 
+### 2026-05-01 清晨 (保守式更新)
+
+#### ✅ 合并上游 152 commits
+
+**冲突解决**：
+- `cli.py`: 保留上游 `resolve_display_context_length` 功能（更精确的上下文长度显示）
+- `ModelPickerDialog.tsx`: 保留上游改进（30秒超时 + 更好的错误处理）
+
+**上游新增功能**：
+- feat: Shopify optional skill (Admin + Storefront GraphQL API)
+- feat: Kanban collaboration board (多用户协作看板)
+- feat: Curator enhancements (最常用/最少使用技能统计)
+- fix: TUI SGR fragment matching (终端渲染优化)
+- fix: ContextVars propagation (并发工具线程上下文传播)
+- fix: Thinking-mode reasoning content preservation (推理内容保留)
+
+**本地功能验证**：
+- ✅ Tool Router v2.0 正常
+- ✅ AIAgent 核心模块正常
+- ✅ CLI 交互正常
+- ✅ 自进化架构完整保留
+
+**新增模块**：
+- feat: agchk 架构审计系统（自动化架构健康检查）
+- docs: 完整审计报告和架构文档
+
 ### 2026-04-30
 
 安全自动化：P2 三层防护机制 - Pre-commit Hook + CI/CD + 改进追踪
