@@ -1,0 +1,38 @@
+# agchk 配置 - Hermes Agent 误报排除规则
+# 文档: https://github.com/huangrichao2020/agchk
+
+# 扫描排除模式
+exclude_patterns:
+  # 测试文件 - 敏感信息脱敏测试数据
+  - "tests/**/test_redact.py"
+  - "tests/fixtures/**"
+  
+  # 构建输出
+  - "build/**"
+  - "dist/**"
+  - "*.egg-info/**"
+  
+  # 依赖目录
+  - "node_modules/**"
+  - ".venv/**"
+  - "venv/**"
+
+# 误报标记
+false_positive_markers:
+  - "# TEST DATA"
+  - "# pragma: no cover"
+  - "# noqa"
+
+# 架构设计选择（非问题）
+design_choices:
+  internal_orchestration:
+    rationale: "Multi-agent orchestration system by design - supports parallel delegation"
+    
+  memory_surfaces:
+    rationale: "Multiple memory backends (MemPalace, fact_store, session_search) by design"
+    
+  startup_surfaces:
+    rationale: "Platform supports CLI, web, gateway, API modes - multiple entry points required"
+    
+  runtime_surfaces:
+    rationale: "Full-stack agent platform - spans Python backend and TypeScript frontend"
