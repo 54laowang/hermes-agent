@@ -82,6 +82,21 @@
 
 ## 📋 更新日志
 
+### 2026-05-01 晚间 21:57 (保守式更新)
+
+#### ✅ 合并上游 1 commit
+
+**上游更新**：
+- fix: lazy session creation — defer DB row until first message (#18370)
+
+**验证状态**：
+- ✅ 0 commits behind origin/main
+- ✅ 本地 34 个提交全部保留
+- ✅ 语法验证通过
+- ✅ Tool Router 模块正常
+
+---
+
 ### 2026-05-01 晚间 (保守式更新)
 
 #### ✅ 合并上游 121 commits（累计 273 commits）
