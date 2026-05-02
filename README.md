@@ -82,6 +82,22 @@
 
 ## 📋 更新日志
 
+### 2026-05-02
+
+#### 上游合并
+- ✅ 合并上游 13 commits
+  - Slack Gateway 修复（ephemeral 消息、slash 命令、用户隔离）
+  - Curator 改进（延迟首次运行 + dry-run 预览）
+  - Gateway 增强（auto-restart、private notice delivery）
+  - 文档更新（Persistent Goals 导航、AUTHOR_MAP 贡献者）
+
+#### 验证状态
+- ✅ 功能验证通过（Tool Router + 自进化架构 + AIAgent + Slack Adapter）
+- ✅ 无冲突，本地 35 commits 完整保留
+- ✅ Workflows 目录已恢复（未跟踪状态）
+
+#### 备份文件
+- 📦 Patch 备份: `~/.hermes/patch-backups/pre-update-20260502_080634.patch` (12.7MB)
 ### 2026-05-01 晚间 21:57 (保守式更新)
 
 #### ✅ 合并上游 1 commit
@@ -681,6 +697,6 @@ MIT — 详见 [LICENSE](LICENSE)。
 
 ---
 
-**最后更新**: 2026-04-30 10:09
+**最后更新**: 2026-05-02 08:08
 **版本**: v0.11.0+184-commits
 **状态**: ✅ 生产就绪
