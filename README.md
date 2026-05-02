@@ -82,6 +82,24 @@
 
 ## 📋 更新日志
 
+### 2026-05-02 晚间
+
+#### 核心优化
+- 🚀 **保守式更新** - 合并上游 29 commits（Slack Gateway 修复为主）
+- 🧠 **Smart Skill Router** - Token 节省 60-70%，响应 0.07ms
+- 🔧 **Tool Router v2.0** - 上下文感知 + 多意图检测
+- ⚡ **自进化架构** - 五层进化系统完整集成
+
+#### 验证状态
+- ✅ 36 commits 本地修改完整保留
+- ✅ 功能验证通过（Tool Router / Self Evolution / AIAgent）
+- ✅ 环境变量完整（13 个，涵盖 Telegram/Weixin/Feishu/Wecom）
+- ✅ 备份机制完善（patch + workflows + .env 三重保险）
+
+#### 备份文件
+- `pre-update-20260502_191535.patch` (12.27 MB) - 完整本地修改
+- `workflows-20260502_191530.tar.gz` (10.93 KB) - Workflows 备份
+- `env-backup-20260502_191535.env` - 环境变量备份
 ### 2026-05-02
 
 #### 上游合并
@@ -697,6 +715,6 @@ MIT — 详见 [LICENSE](LICENSE)。
 
 ---
 
-**最后更新**: 2026-05-02 08:08
+**最后更新**: 2026-05-02 19:19
 **版本**: v0.11.0+184-commits
 **状态**: ✅ 生产就绪
