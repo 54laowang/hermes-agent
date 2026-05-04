@@ -1,0 +1,12 @@
+# Hermes Hooks Configuration
+
+hooks:
+  pre_llm_call:
+    # 缓存感知 Prompt 优化（2026-05-04 新增）
+    - cache_aware_hook.main
+    # 监察者模式预检
+    - supervisor-precheck.main
+    
+  post_llm_call:
+    # 任务上下文检测（2026-05-04 新增）
+    - task_context_detector.main
