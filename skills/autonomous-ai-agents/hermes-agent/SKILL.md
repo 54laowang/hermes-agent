@@ -31,6 +31,8 @@ People use Hermes for software development, research, system administration, dat
 - 官方文档: https://hermes-agent.nousresearch.com/docs
 - GitHub: https://github.com/nousresearch/hermes-agent
 - `references/desktop-pet-implementation.md` - 桌面宠物系统实现笔记（线程安全、单例模式、PIL动画生成）
+- `references/hook-conflict-resolution.md` - Hook 冲突解决实录（时间感知合并、Token 优化、优先级配置）
+- `references/skill-authoring-best-practices.md` - 14 个 Skill 编写模式实践要点（触发检查、Token 经济、指令校准）
 ## Quick Start
 
 ```bash

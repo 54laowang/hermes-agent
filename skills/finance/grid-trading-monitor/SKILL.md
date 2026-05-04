@@ -1,8 +1,24 @@
 ---
 name: grid-trading-monitor
-description: ETF 网格交易监控系统 - 配置网格参数、实时行情获取、定时监控、微信推送提醒
-version: 1.0.0
+description: |
+  ETF 网格交易监控系统 - 配置网格参数、实时行情获取、定时监控、微信推送提醒
+  
+  Use when: 网格交易, grid trading, ETF监控, 量化监控, 恒生科技, 513130, 网格策略, 定投监控, grid, 交易提醒.
+  
+  Do NOT use for:
+  - 实时交易执行（仅监控提醒）
+  - 其他策略类型（如定投、趋势跟踪）
+  - 个股分析（仅支持 ETF）
+  - 高频交易（不适合秒级监控）
+  - 资金管理或仓位计算
+version: 1.1.0
 category: finance
+keywords:
+  - 网格交易
+  - grid trading
+  - ETF监控
+  - 量化交易
+  - 自动化监控
 triggers:
   - 网格交易
   - grid trading
@@ -605,3 +621,112 @@ cp -r ~/.hermes/grid-trading ~/.hermes/grid-trading-512480
 ├── grid_trading.log     # 运行日志
 └── SKILL.md             # 使用说明
 ```
+
+---
+
+## Known Gotchas
+
+### 行情数据问题
+
+- **东方财富接口限流**: 频繁请求会被限流
+  ```python
+  # 添加延时，避免请求过快
+  time.sleep(3)  # 每次请求间隔 3 秒
+  ```
+
+- **非交易时间无数据**: 盘前盘后可能返回空值
+  ```python
+  # 检查返回数据有效性
+  if not data or 'price' not in data:
+      print("非交易时间或数据异常")
+      return
+  ```
+
+- **数据延迟**: 免费接口有 15 分钟延迟
+  ```
+  # 不适合实时交易，仅作参考
+  ```
+
+### 网格配置陷阱
+
+- **间距过小导致频繁交易**: 手续费吃掉利润
+  ```
+  ❌ 错误: 间距 0.5%，手续费 0.1%
+  ✅ 正确: 间距 ≥ 2%，手续费占比 < 5%
+  ```
+
+- **未预留现金**: 下跌时无资金补仓
+  ```python
+  # 现金比例建议 30-50%
+  cash_ratio = total_funds * 0.4  # 预留 40% 现金
+  ```
+
+- **格数设置不合理**: 过多或过少都会失效
+  ```
+  建议: 根据历史波动率设置
+  - 低波动 ETF: 10-20 格
+  - 高波动 ETF: 20-40 格
+  ```
+
+### 监控执行问题
+
+- **Cronjob 未正确设置**: 监控任务未执行
+  ```bash
+  # 检查 cron 日志
+  grep CRON /var/log/syslog | tail -20
+  
+  # 确保脚本有执行权限
+  chmod +x ~/.hermes/grid-trading/grid_monitor.py
+  ```
+
+- **微信推送失败**: Token 过期或网络问题
+  ```python
+  # 添加重试机制
+  for i in range(3):
+      if send_wechat_message(msg):
+          break
+      time.sleep(5)
+  ```
+
+- **多次触发相同提醒**: 状态未正确更新
+  ```python
+  # 触发后立即更新状态
+  update_status(last_trigger_time=datetime.now())
+  ```
+
+### 交易执行风险
+
+- **仅监控不执行**: 仍需人工确认
+  ```
+  ⚠️ 系统仅推送提醒，不自动下单
+  # 避免: 将监控信号直接用于程序化交易
+  ```
+
+- **市场剧烈波动**: 网格可能失效
+  ```
+  # 单边暴涨或暴跌时，网格策略会踏空或套牢
+  # 建议: 设置止损线和止盈线
+  ```
+
+- **流动性风险**: ETF 成交量不足
+  ```
+  # 检查 ETF 日成交额
+  # 避免: 日成交额 < 1 亿的 ETF
+  ```
+
+### 平台限制
+
+- **时区问题**: Cron 使用系统时区
+  ```bash
+  # 确认系统时区
+  timedatectl
+  
+  # Cron 使用 UTC 时间，需要换算
+  # 北京时间 9:30 = UTC 1:30
+  ```
+
+- **脚本超时**: 默认 60 秒超时
+  ```python
+  # 在 Cronjob 配置中增加超时时间
+  hermes cron create --timeout 300 ...
+  ```

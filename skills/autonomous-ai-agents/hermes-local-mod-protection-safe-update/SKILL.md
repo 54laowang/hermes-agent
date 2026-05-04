@@ -493,6 +493,7 @@ python3 scripts/backup-before-update.py --workflows
 - **环境变量备份系统** - 自动备份机制、恢复流程、最佳实践（见 `references/env-backup-system.md`）
 - **上游合并时 Skills 目录冲突处理** - 本地 skills 为独立仓库时如何合并上游（见 `references/upstream-merge-with-local-skills-conflict.md`）
 - **Git History Forensics for Concept Evolution** - 追踪概念/功能的演变历史，用于文档完整性验证（见 `references/git-history-forensics-for-concept-evolution.md`）
+- **Hook 注入系统冲突检测与解决** - 多个 Hook 同时注入的冲突检测、统一模块创建、Token 优化（见 `references/hook-conflict-detection-and-resolution.md`）
 
 ## 支持脚本
 

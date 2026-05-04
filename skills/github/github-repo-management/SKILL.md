@@ -1,9 +1,35 @@
 ---
 name: github-repo-management
-description: 克隆、创建、派生、配置和管理 GitHub 仓库。管理远程仓库、密钥、发布和工作流。
-version: 1.1.0
+description: |
+  克隆、创建、派生、配置和管理 GitHub 仓库。管理远程仓库、密钥、发布和工作流。
+  
+  Use when: git, github, repository, clone, fork, push, pull, branch, commit, 仓库, 克隆, 推送.
+  
+  Do NOT use for:
+  - Committing without reviewing changes (use code-review skill instead)
+  - Force pushing to protected branches without explicit user confirmation
+  - Deleting remote branches or repositories without backup
+  - Modifying .git directory directly
+  - Large file storage (use git-lfs skill instead)
+version: 1.2.0
 author: Hermes Agent
 license: MIT
+keywords:
+  - GitHub
+  - Repository
+  - Git
+  - Clone
+  - Fork
+  - Push
+  - Pull
+triggers:
+  - clone repository
+  - create repo
+  - fork repo
+  - push to github
+  - pull request
+  - git clone
+  - github create
 metadata:
   hermes:
     tags: [GitHub, Repositories, Git, Releases, Secrets, Configuration]
@@ -513,3 +539,92 @@ for g in json.load(sys.stdin):
 | List workflows | `gh workflow list` | `curl GET /repos/o/r/actions/workflows` |
 | Rerun CI | `gh run rerun ID` | `curl POST /repos/o/r/actions/runs/ID/rerun` |
 | Set secret | `gh secret set KEY` | `curl PUT /repos/o/r/actions/secrets/KEY` (+ encryption) |
+
+---
+
+## Known Gotchas
+
+### Authentication Issues
+
+- **`gh auth status` fails silently**: Check if `GITHUB_TOKEN` environment variable is set
+  ```bash
+  echo $GITHUB_TOKEN  # Should show token, not empty
+  ```
+
+- **403 Forbidden on push**: Token may lack `repo` scope
+  ```bash
+  gh auth refresh -h github.com -s repo,workflow
+  ```
+
+- **SSH vs HTTPS conflicts**: Use consistent protocol
+  ```bash
+  # Check remote URL
+  git remote -v
+  
+  # Switch to HTTPS
+  git remote set-url origin https://github.com/user/repo.git
+  ```
+
+### Repository Operations
+
+- **Fork fails if repo already exists**: Delete fork first or use `--fork-name`
+  ```bash
+  gh repo fork owner/repo --fork-name my-repo-name
+  ```
+
+- **Clone fails with "Repository not found"**: Check visibility (private repos need auth)
+  ```bash
+  # For private repos
+  gh repo clone owner/repo  # Uses auth automatically
+  ```
+
+- **Branch protection prevents force push**: Must use `--force-with-lease` or admin privileges
+  ```bash
+  git push --force-with-lease origin branch-name
+  ```
+
+### Rate Limiting
+
+- **API rate limit exceeded (5000/hour for auth)**: Check remaining quota
+  ```bash
+  gh api rate_limit --jq '.resources.core'
+  ```
+
+- **Secondary rate limits**: Avoid rapid concurrent requests
+  ```bash
+  # Add delays between API calls
+  sleep 1
+  gh api endpoint
+  ```
+
+### Common Mistakes
+
+- **Accidentally pushing to wrong remote**: Always verify before push
+  ```bash
+  git remote -v && git branch -vv  # Check remote and tracking
+  ```
+
+- **Forgetting to set upstream**: Use `-u` flag on first push
+  ```bash
+  git push -u origin feature-branch
+  ```
+
+- **Losing commits after force pull**: Use `git reflog` to recover
+  ```bash
+  git reflog  # Find lost commit
+  git reset --hard HEAD@{n}  # Restore
+  ```
+
+### Platform Differences
+
+- **Windows line endings (CRLF) issues**: Configure git appropriately
+  ```bash
+  git config --global core.autocrlf input  # Unix/Mac
+  git config --global core.autocrlf true   # Windows
+  ```
+
+- **Large files (>100MB) rejected**: Use Git LFS
+  ```bash
+  git lfs install
+  git lfs track "*.psd"
+  ```
