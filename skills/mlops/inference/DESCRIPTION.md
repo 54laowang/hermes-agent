@@ -1,3 +1,3 @@
 ---
-description: Model serving, quantization (GGUF/GPTQ), structured output, inference optimization, and model surgery tools for deploying and running LLMs.
+description: 模型服务、量化 (GGUF/GPTQ)、结构化输出、推理优化和模型手术工具 — 用于部署和运行 LLM。
 ---

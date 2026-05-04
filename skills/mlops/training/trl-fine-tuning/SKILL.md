@@ -1,6 +1,6 @@
 ---
 name: fine-tuning-with-trl
-description: "TRL: SFT, DPO, PPO, GRPO, reward modeling for LLM RLHF."
+description: 使用强化学习微调 LLM (TRL) — SFT 指令微调、DPO 偏好对齐、PPO/GRPO 奖励优化和奖励模型训练。适用于 RLHF、偏好对齐或人类反馈训练。与 HuggingFace Transformers 配合使用。
 version: 1.0.0
 author: Orchestra Research
 license: MIT
@@ -252,8 +252,6 @@ trl dpo \
 
 Train with reinforcement learning using minimal memory.
 
-For in-depth GRPO guidance — reward function design, critical training insights (loss behavior, mode collapse, tuning), and advanced multi-stage patterns — see **[references/grpo-training.md](references/grpo-training.md)**. A production-ready training script is in **[templates/basic_grpo_training.py](templates/basic_grpo_training.py)**.
-
 Copy this checklist:
 
 ```
@@ -429,8 +427,6 @@ config = PPOConfig(
 **Reward modeling**: See [references/reward-modeling.md](references/reward-modeling.md) for outcome vs process rewards, Bradley-Terry loss, and reward model evaluation.
 
 **Online RL methods**: See [references/online-rl.md](references/online-rl.md) for PPO, GRPO, RLOO, and OnlineDPO with detailed configurations.
-
-**GRPO deep dive**: See [references/grpo-training.md](references/grpo-training.md) for expert-level GRPO patterns — reward function design philosophy, training insights (why loss increases, mode collapse detection), hyperparameter tuning, multi-stage training, and troubleshooting. Production-ready template in [templates/basic_grpo_training.py](templates/basic_grpo_training.py).
 
 ## Hardware requirements
 

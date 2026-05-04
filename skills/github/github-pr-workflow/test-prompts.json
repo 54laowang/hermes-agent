@@ -1,0 +1,72 @@
+{
+  "test_prompts": [
+    {
+      "id": "test-1",
+      "prompt": "创建一个名为 feat/user-profile 的分支",
+      "expected_behavior": "询问确认，检查前置条件，创建分支",
+      "critical_checkpoints": [
+        "检查当前目录是否为 git 仓库",
+        "确认分支名称符合规范",
+        "验证分支创建成功"
+      ]
+    },
+    {
+      "id": "test-2",
+      "prompt": "提交当前的变更",
+      "prompt_context": "假设用户已修改了 src/user.py 文件",
+      "expected_behavior": "检查变更内容，生成符合规范的 commit message",
+      "critical_checkpoints": [
+        "使用 read_file 检查变更内容",
+        "验证 commit message 格式",
+        "确认相关文件已 stage"
+      ]
+    },
+    {
+      "id": "test-3",
+      "prompt": "创建 PR 到 main 分支",
+      "expected_behavior": "推送分支，创建包含 Summary 和 Test Plan 的 PR",
+      "critical_checkpoints": [
+        "检查本地测试是否通过",
+        "验证 PR title 和 body",
+        "关联相关 issue"
+      ]
+    },
+    {
+      "id": "test-4",
+      "prompt": "CI 失败了，帮我修复",
+      "prompt_context": "模拟 CI 测试失败场景",
+      "expected_behavior": "查看失败日志，定位问题，修复并推送",
+      "critical_checkpoints": [
+        "使用 gh run view 或 curl 获取失败日志",
+        "准确定位失败原因",
+        "修复后验证 CI 状态"
+      ]
+    },
+    {
+      "id": "test-5",
+      "prompt": "分支创建失败，提示分支已存在",
+      "expected_behavior": "检查分支是否存在，询问是否切换或使用新名称",
+      "critical_checkpoints": [
+        "列出所有分支",
+        "询问用户意图",
+        "提供合理的解决方案"
+      ]
+    },
+    {
+      "id": "test-6",
+      "prompt": "push 被拒绝，远程有新提交",
+      "expected_behavior": "拉取远程更改，处理可能的冲突",
+      "critical_checkpoints": [
+        "使用 rebase 或 merge 处理",
+        "解决冲突（如有）",
+        "使用 --force-with-lease 推送"
+      ]
+    }
+  ],
+  "evaluation_criteria": {
+    "checkpoint_compliance": "每个检查点必须明确标记【检查点】",
+    "exception_handling": "异常场景必须有明确的处理步骤",
+    "user_confirmation": "关键操作前需向用户确认",
+    "fallback_strategy": "gh 不可用时能正确使用 curl 方案"
+  }
+}

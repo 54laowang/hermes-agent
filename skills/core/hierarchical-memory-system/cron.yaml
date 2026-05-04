@@ -1,0 +1,4 @@
+name: 每日记忆摘要（L1 → L2）
+command: /usr/bin/env python3 /Users/me/.hermes/skills/core/hierarchical-memory-system/scripts/daily-summarizer.py
+schedule: "55 23 * * *"
+notify: false

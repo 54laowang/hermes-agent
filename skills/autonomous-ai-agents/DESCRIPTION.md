@@ -1,3 +1,3 @@
 ---
-description: Skills for spawning and orchestrating autonomous AI coding agents and multi-agent workflows — running independent agent processes, delegating tasks, and coordinating parallel workstreams.
+description: 自主 AI 编码代理和多代理工作流的编排技能 — 运行独立代理进程、委派任务和协调并行工作流ms.
 ---

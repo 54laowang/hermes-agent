@@ -1,3 +1,3 @@
 ---
-description: ML research frameworks for building and optimizing AI systems with declarative programming.
+description: ML 研究框架 — 使用声明式编程构建和优化 AI 系统。
 ---

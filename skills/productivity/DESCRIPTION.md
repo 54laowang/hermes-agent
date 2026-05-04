@@ -1,3 +1,3 @@
 ---
-description: Skills for document creation, presentations, spreadsheets, and other productivity workflows.
+description: 文档创建、演示文稿、电子表格和其他生产力工作流的技能。
 ---

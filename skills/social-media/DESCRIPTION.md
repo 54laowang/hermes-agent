@@ -1,3 +1,3 @@
 ---
-description: Skills for interacting with social platforms and social-media workflows — posting, reading, monitoring, and account operations.
+description: 社交平台技能 — 发布、阅读、监控和账号操作等社交媒体工作流程。
 ---

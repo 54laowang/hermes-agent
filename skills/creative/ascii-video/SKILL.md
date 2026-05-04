@@ -1,17 +1,9 @@
 ---
 name: ascii-video
-description: "ASCII video: convert video/audio to colored ASCII MP4/GIF."
+description: "ASCII 艺术视频生产流程 — 支持任意格式。将视频/音频/图像/生成式输入转换为彩色 ASCII 字符视频输出 (MP4、GIF、图像序列)。覆盖：视频转 ASCII、音频响应音乐可视化器、生成式 ASCII 艺术动画、混合视频+音频响应、文本/歌词叠加、实时终端渲染。"
 ---
 
 # ASCII Video Production Pipeline
-
-## When to use
-
-Use when users request: ASCII video, text art video, terminal-style video, character art animation, retro text visualization, audio visualizer in ASCII, converting video to ASCII art, matrix-style effects, or any animated ASCII output.
-
-## What's inside
-
-Production pipeline for ASCII art video — any format. Converts video/audio/images/generative input into colored ASCII character video output (MP4, GIF, image sequence). Covers: video-to-ASCII conversion, audio-reactive music visualizers, generative ASCII art animations, hybrid video+audio reactive, text/lyrics overlays, real-time terminal rendering.
 
 ## Creative Standard
 

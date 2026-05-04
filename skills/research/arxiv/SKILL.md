@@ -1,6 +1,6 @@
 ---
 name: arxiv
-description: "Search arXiv papers by keyword, author, category, or ID."
+description: 使用 arXiv 免费 REST API 搜索和检索学术论文。无需 API 密钥。按关键词、作者、分类或 ID 搜索。可配合 web_extract 或 ocr-and-documents skill 阅读完整论文内容。
 version: 1.0.0
 author: Hermes Agent
 license: MIT
@@ -279,3 +279,169 @@ Papers can be withdrawn after submission. When this happens:
 - The `<summary>` field contains a withdrawal notice (look for "withdrawn" or "retracted")
 - Metadata fields may be incomplete
 - Always check the summary before treating a result as a valid paper
+
+---
+
+## ✅ Done When 完成判据
+
+> **核心思想**：从"我猜我做完了"变成"我能确认我做完了"
+
+### 四大支柱
+
+| 支柱 | 说明 | 本 Skill 对应 |
+|------|------|--------------|
+| **Goal** | 任务目标 | 成功搜索/获取论文并返回结构化信息 |
+| **Context** | 上下文来源 | 用户查询关键词/作者/arXiv ID |
+| **Constraints** | 约束条件 | API 响应时间、结果数量限制 |
+| **Done When** | 完成判据 | 下方必检项 |
+
+### 必检项（全部满足才算完成）
+
+#### 【任务：论文搜索】
+
+- [ ] **API 调用成功**
+  - arXiv API 已调用（或 Semantic Scholar API）
+  - HTTP 状态码 200
+  - 响应内容已解析
+  - **验证方法**：`curl` 返回有效 XML/JSON
+
+- [ ] **搜索结果有效**
+  - 返回论文数量 > 0
+  - 每篇论文包含：标题、作者、发布日期、摘要、arXiv ID
+  - 没有遇到"Paper not found"
+  - **验证方法**：输出包含 ≥1 篇论文的完整信息
+
+- [ ] **输出格式清晰**
+  - 论文列表已编号
+  - 每篇论文格式统一：
+    ```
+    1. [arXiv ID] 标题
+       Authors: 作者列表
+       Published: 发布日期 | Categories: 分类
+       Abstract: 摘要前200字...
+       PDF: https://arxiv.org/pdf/ID
+    ```
+  - **验证方法**：输出符合标准格式
+
+- [ ] **排序正确**
+  - 按要求排序（相关性/提交日期/更新日期）
+  - 最新论文在前（如用户要求）
+  - **验证方法**：检查论文日期顺序
+
+#### 【任务：获取特定论文】
+
+- [ ] **arXiv ID 有效**
+  - ID 格式正确（新格式：`YYMM.NNNNN` 或旧格式：`类别/YYMMNNN`）
+  - 论文存在（未被删除）
+  - **验证方法**：`curl` 返回有效 `<entry>`
+
+- [ ] **元数据完整**
+  - 标题已提取
+  - 作者列表已提取
+  - 发布日期已提取
+  - 摘要已提取
+  - 分类已提取
+  - PDF 链接已生成
+  - **验证方法**：输出包含所有必要字段
+
+- [ ] **版本信息明确**
+  - 论文版本已标注（如有多个版本）
+  - 使用的是最新版本（除非用户指定版本）
+  - **验证方法**：输出包含版本号
+
+#### 【任务：引用分析（Semantic Scholar）】
+
+- [ ] **引用数据已获取**
+  - 引用次数已获取
+  - 影响力引用次数已获取（influentialCitationCount）
+  - 参考文献数量已获取
+  - **验证方法**：输出包含引用统计
+
+- [ ] **引用/参考文献列表已生成**
+  - 至少返回 10 条引用/参考文献
+  - 每条包含：标题、作者、年份、引用次数
+  - **验证方法**：输出包含引用列表
+
+#### 【任务：BibTeX 生成】
+
+- [ ] **BibTeX 格式正确**
+  - 包含必要字段：title, author, year, eprint, url
+  - BibTeX key 已生成（格式：`作者姓氏年份_ID`）
+  - **验证方法**：输出符合 BibTeX 语法
+
+### 可选项（加分项）
+
+- [ ] **多个数据源交叉验证完成**
+  - arXiv + Semantic Scholar 数据一致
+  - **验证方法**：对比两个 API 的结果
+
+- [ ] **论文影响力评估完成**
+  - 引用次数已评估（高/中/低）
+  - 作者影响力已评估（H-index、总引用数）
+  - **验证方法**：输出包含影响力评价
+
+- [ ] **相关论文推荐已提供**
+  - 至少 5 篇相关论文
+  - 推荐理由已说明
+  - **验证方法**：输出包含「相关论文」章节
+
+### 失败处理
+
+| 失败场景 | 处理路径 | 用户提示 |
+|---------|---------|---------|
+| API 超时 | 重试 1 次 | ⚠️ arXiv API 响应慢，请稍候 |
+| 无搜索结果 | 建议调整关键词 | ❌ 未找到相关论文，建议调整关键词 |
+| 论文不存在 | 明确告知 | ❌ 该 arXiv ID 不存在或已删除 |
+| 论文已撤回 | 标注撤回状态 | ⚠️ 该论文已被撤回，请核实 |
+| Semantic Scholar 无数据 | 仅使用 arXiv | ⚠️ Semantic Scholar 暂无该论文引用数据 |
+
+### 自检代码示例
+
+```python
+def verify_done_when(task_type, query=None, arxiv_id=None):
+    """验证 Done When 是否满足"""
+    
+    if task_type == 'paper_search':
+        # 检查 API 调用
+        assert api_response is not None
+        assert api_response.status_code == 200
+        
+        # 检查结果有效性
+        papers = parse_papers(api_response)
+        assert len(papers) > 0
+        
+        # 检查输出格式
+        for paper in papers:
+            assert 'arXiv ID' in paper
+            assert '标题' in paper
+            assert 'Authors' in paper
+            assert 'PDF' in paper
+    
+    elif task_type == 'paper_fetch':
+        # 检查 ID 有效性
+        assert arxiv_id is not None
+        assert paper_exists(arxiv_id)
+        
+        # 检查元数据完整
+        paper = fetch_paper(arxiv_id)
+        assert paper['title'] is not None
+        assert paper['authors'] is not None
+        assert paper['abstract'] is not None
+    
+    elif task_type == 'citation_analysis':
+        # 检查引用数据
+        assert 'citationCount' in output
+        assert 'referenceCount' in output
+        
+        # 检查列表
+        assert len(citations) >= 10 or len(references) >= 10
+    
+    elif task_type == 'bibtex':
+        # 检查格式
+        assert output.startswith('@article{')
+        assert 'title' in output
+        assert 'author' in output
+        assert 'eprint' in output
+    
+    return True  # 所有检查通过
+```

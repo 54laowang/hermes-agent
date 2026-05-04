@@ -1,0 +1,66 @@
+{
+  "updated_at": "2026-05-04T22:27:52.776868",
+  "platforms": {
+    "telegram": [
+      {
+        "id": "7954228359",
+        "name": "check yeah",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "discord": [],
+    "whatsapp": [],
+    "slack": [],
+    "signal": [],
+    "mattermost": [],
+    "matrix": [],
+    "homeassistant": [],
+    "email": [],
+    "sms": [],
+    "dingtalk": [],
+    "feishu": [
+      {
+        "id": "oc_1240162ddc9705db4120dfc6c544af6f",
+        "name": "oc_1240162ddc9705db4120dfc6c544af6f",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "wecom": [
+      {
+        "id": "WangTaoTao",
+        "name": "WangTaoTao",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "wecom_callback": [],
+    "weixin": [
+      {
+        "id": "o9cq80znDxnUb_ojFoc-8kBCdqdE@im.wechat",
+        "name": "o9cq80znDxnUb_ojFoc-8kBCdqdE@im.wechat",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "bluebubbles": [],
+    "qqbot": [],
+    "yuanbao": [
+      {
+        "id": "group:598026387:main",
+        "name": "598026387 / topic main",
+        "type": "group",
+        "thread_id": "main"
+      },
+      {
+        "id": "direct:9jKEQ0JBZqgGUZSXDeUTWjBUULUcsfPHmqrsAbTOM+o=",
+        "name": "王涛",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "irc": [],
+    "teams": []
+  }
+}

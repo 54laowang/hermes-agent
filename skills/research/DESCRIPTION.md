@@ -1,3 +1,3 @@
 ---
-description: Skills for academic research, paper discovery, literature review, domain reconnaissance, market data, content monitoring, and scientific knowledge retrieval.
+description: 学术研究技能 — 论文发现、文献综述、领域侦察、市场数据、内容监控和科学知识检索。
 ---

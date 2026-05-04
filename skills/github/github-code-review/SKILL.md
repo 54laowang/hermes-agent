@@ -1,6 +1,6 @@
 ---
 name: github-code-review
-description: "Review PRs: diffs, inline comments via gh or REST."
+description: 通过分析 git diff 审查代码更改，在 PR 上留下行内评论，执行全面的推送前审查。
 version: 1.1.0
 author: Hermes Agent
 license: MIT
@@ -334,7 +334,7 @@ When the user asks you to "review PR #N", "look at this PR", or gives you a PR U
 ### Step 1: Set up environment
 
 ```bash
-source "${HERMES_HOME:-$HOME/.hermes}/skills/github/github-auth/scripts/gh-env.sh"
+source ~/.hermes/skills/github/github-auth/scripts/gh-env.sh
 # Or run the inline setup block from the top of this skill
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: ocr-and-documents
-description: "Extract text from PDFs/scans (pymupdf, marker-pdf)."
+description: 从 PDF 和扫描文档中提取文本。远程 URL 使用 web_extract，本地文本 PDF 使用 pymupdf，OCR/扫描文档使用 marker-pdf。DOCX 使用 python-docx，PPTX 参见 powerpoint skill。
 version: 2.3.0
 author: Hermes Agent
 license: MIT

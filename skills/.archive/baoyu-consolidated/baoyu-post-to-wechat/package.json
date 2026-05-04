@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@jsquash/avif": "^2.1.1",
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/png": "^3.1.1",
+    "@jsquash/webp": "^1.5.0",
+    "baoyu-chrome-cdp": "^0.1.0",
+    "baoyu-md": "^0.1.0",
+    "jimp": "^1.6.1"
+  }
+}

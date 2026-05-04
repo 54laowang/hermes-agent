@@ -1,14 +1,10 @@
 ---
 name: powerpoint
-description: "Create, read, edit .pptx decks, slides, notes, templates."
+description: 涉及 .pptx 文件的任何场景都使用此 skill — 作为输入、输出或两者。包括创建幻灯片、演示文稿；读取、解析或提取任何 .pptx 文件的文本；编辑、修改或更新现有演示文稿；合并或拆分幻灯文件；处理模板、布局、演讲者备注或评论。当用户提到"deck"、"slides"、"presentation"或引用 .pptx 文件名时触发。
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
 # Powerpoint Skill
-
-## When to use
-
-Use this skill any time a .pptx file is involved in any way — as input, output, or both. This includes: creating slide decks, pitch decks, or presentations; reading, parsing, or extracting text from any .pptx file (even if the extracted content will be used elsewhere, like in an email or summary); editing, modifying, or updating existing presentations; combining or splitting slide files; working with templates, layouts, speaker notes, or comments. Trigger whenever the user mentions "deck," "slides," "presentation," or references a .pptx filename, regardless of what they plan to do with the content afterward. If a .pptx file needs to be opened, created, or touched, use this skill.
 
 ## Quick Reference
 

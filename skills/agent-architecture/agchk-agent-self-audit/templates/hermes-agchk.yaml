@@ -1,0 +1,139 @@
+# agchk 配置模板 - Hermes Agent 项目专用
+# 使用方法: 复制到项目根目录并重命名为 .agchk.yaml
+# 文档: https://github.com/huangrichao2020/agchk
+
+# ===========================================
+# 扫描排除模式
+# ===========================================
+exclude_patterns:
+  # 测试文件 - 敏感信息脱敏测试数据（典型误报源）
+  - "tests/**/test_redact.py"
+  - "tests/fixtures/**"
+  - "tests/conftest.py"
+  
+  # 构建输出
+  - "build/**"
+  - "dist/**"
+  - "*.egg-info/**"
+  - "__pycache__/**"
+  
+  # 依赖目录
+  - "node_modules/**"
+  - ".venv/**"
+  - "venv/**"
+  - "env/**"
+  
+  # IDE/编辑器
+  - ".vscode/**"
+  - ".idea/**"
+  - "*.swp"
+  - "*.swo"
+
+# ===========================================
+# 误报标记
+# ===========================================
+false_positive_markers:
+  - "# TEST DATA"
+  - "# pragma: no cover"
+  - "# noqa"
+  - "# TEST ONLY"
+  - "# MOCK DATA"
+
+# ===========================================
+# 架构设计选择声明（非问题）
+# ===========================================
+design_choices:
+  # 多智能体编排系统 - 支持并行委派
+  internal_orchestration:
+    rationale: "Multi-agent orchestration system by design - supports parallel delegation, supervisor mode, and tool routing"
+    scanners_affected:
+      - "internal_orchestration_sprawl"
+      - "role_play_handoff"
+    
+  # 多后端记忆系统 - MemPalace + fact_store + session_search
+  memory_surfaces:
+    rationale: "Multiple memory backends by design: L1 MemPalace (index), L2 fact_store (facts), L3 SOP (procedures), L4 session_search (archive)"
+    scanners_affected:
+      - "memory_freshness_confusion"
+      - "memory_lifecycle"
+    
+  # 多平台启动入口 - CLI + Web + Gateway + API
+  startup_surfaces:
+    rationale: "Platform supports CLI (hermes), Web UI (Vite), Gateway (multi-platform messaging), API server - multiple entry points required"
+    scanners_affected:
+      - "startup_surface_sprawl"
+    
+  # 全栈运行时 - Python 后端 + TypeScript 前端
+  runtime_surfaces:
+    rationale: "Full-stack agent platform - Python backend (run_agent.py, cli.py) + TypeScript frontend (ui-tui, web)"
+    scanners_affected:
+      - "runtime_surface_sprawl"
+    
+  # Skill 系统 - 支持角色专业化
+  skill_system:
+    rationale: "Skill system supports role-based agents (PM, architect, coder, reviewer) - methodology not sprawl"
+    scanners_affected:
+      - "role_play_handoff_orchestration"
+    
+  # Shell 执行 - 终端工具必需
+  shell_execution:
+    rationale: "Terminal/shell execution is core functionality - tools/environments/ provides containerized execution"
+    scanners_affected:
+      - "unrestricted_code_execution"
+
+# ===========================================
+# 项目特定规则
+# ===========================================
+project_rules:
+  # Hermes 特定文件
+  hermes_specific:
+    - path: "run_agent.py"
+      note: "Core agent loop - high complexity expected"
+    - path: "cli.py"
+      note: "CLI orchestrator - high complexity expected"
+    - path: "model_tools.py"
+      note: "Tool orchestration - handles 50+ tools"
+    - path: "gateway/platforms/"
+      note: "Platform adapters - 20+ messaging platforms supported"
+    - path: "agent/tool_router*.py"
+      note: "Tool Router v2.0 - context-aware routing with 10 intents"
+    - path: "agent/self_evolution*.py"
+      note: "Self-evolution architecture - 5-layer evolution loop"
+
+# ===========================================
+# 扫描配置
+# ===========================================
+scan_config:
+  # 个人开发模式 - 适度严格
+  profile: personal
+  
+  # 超时设置
+  timeout_seconds: 300
+  
+  # 并行扫描
+  parallel: true
+  
+  # 输出格式
+  output_format: json
+  
+  # 生成 Markdown 报告
+  generate_report: true
+
+# ===========================================
+# 持续审计配置
+# ===========================================
+continuous_audit:
+  # CI/CD 集成
+  ci_integration:
+    enabled: false
+    fail_on: "critical"
+    
+  # 定期扫描
+  scheduled_scan:
+    enabled: false
+    frequency: "weekly"
+    
+  # 性能基准
+  performance_baseline:
+    enabled: false
+    regression_threshold: 20  # 20% 性能回退告警

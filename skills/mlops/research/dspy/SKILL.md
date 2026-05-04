@@ -1,6 +1,6 @@
 ---
 name: dspy
-description: "DSPy: declarative LM programs, auto-optimize prompts, RAG."
+description: 使用声明式编程构建复杂 AI 系统，自动优化提示词，通过 DSPy 创建模块化 RAG 系统和代理 — 斯坦福 NLP 的系统化 LM 编程框架。
 version: 1.0.0
 author: Orchestra Research
 license: MIT

@@ -1,6 +1,6 @@
 ---
 name: obliteratus
-description: "OBLITERATUS: abliterate LLM refusals (diff-in-means)."
+description: 使用 OBLITERATUS 从开源 LLM 中移除拒绝行为 — 机制可解释性技术（diff-in-means、SVD、白化 SVD、LEACE、SAE 分解等）切除安全护栏同时保留推理能力。9 种 CLI 方法、28 个分析模块、116 个模型预设跨 5 个计算层级、锦标赛评估和遥测驱动推荐。
 version: 2.0.0
 author: Hermes Agent
 license: MIT
@@ -13,20 +13,9 @@ metadata:
 
 # OBLITERATUS Skill
 
-## What's inside
-
-9 CLI methods, 28 analysis modules, 116 model presets across 5 compute tiers, tournament evaluation, and telemetry-driven recommendations.
-
 Remove refusal behaviors (guardrails) from open-weight LLMs without retraining or fine-tuning. Uses mechanistic interpretability techniques — including diff-in-means, SVD, whitened SVD, LEACE concept erasure, SAE decomposition, Bayesian kernel projection, and more — to identify and surgically excise refusal directions from model weights while preserving reasoning capabilities.
 
 **License warning:** OBLITERATUS is AGPL-3.0. NEVER import it as a Python library. Always invoke via CLI (`obliteratus` command) or subprocess. This keeps Hermes Agent's MIT license clean.
-
-## Video Guide
-
-Walkthrough of OBLITERATUS used by a Hermes agent to abliterate Gemma:
-https://www.youtube.com/watch?v=8fG9BrNTeHs ("OBLITERATUS: An AI Agent Removed Gemma 4's Safety Guardrails")
-
-Useful when the user wants a visual overview of the end-to-end workflow before running it themselves.
 
 ## When to Use This Skill
 

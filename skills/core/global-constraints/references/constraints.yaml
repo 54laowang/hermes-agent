@@ -1,0 +1,297 @@
+# 全局约束配置
+
+## ⚠️ 优先级声明
+
+**时间锚定 > 时间感知 > 其他约束**
+
+- 时间锚定：数据准确性（最高优先级）
+- 时间感知：行为人性化（次高优先级）
+
+---
+
+## L0: 时间锚点约束（最高优先级）
+
+### 市场状态判断
+
+a_share_market:
+  trading_hours:
+    morning:
+      start: "09:30"
+      end: "11:30"
+    afternoon:
+      start: "13:00"
+      end: "15:00"
+  
+  status_detection:
+    weekend:
+      days: [Saturday, Sunday]
+      status: "休市"
+      data_requirement: "使用最近交易日数据，必须标注日期"
+    
+    pre_market:
+      time: "00:00-09:30"
+      status: "盘前"
+      data_requirement: "使用前一日收盘数据"
+    
+    morning_trading:
+      time: "09:30-11:30"
+      status: "早盘"
+      data_requirement: "实时数据，标注时间戳"
+    
+    lunch_break:
+      time: "11:30-13:00"
+      status: "午盘休市"
+      data_requirement: "使用早盘收盘数据"
+    
+    afternoon_trading:
+      time: "13:00-15:00"
+      status: "午后"
+      data_requirement: "实时数据，标注时间戳"
+    
+    after_hours:
+      time: "15:00-24:00"
+      status: "收盘"
+      data_requirement: "使用当日收盘数据，标注日期"
+
+us_share_market:
+  timezone_offset: -12  # 美东时间 = 北京时间 - 12小时
+  
+  trading_hours:
+    edt: "09:30-16:00"  # 美东时间
+    beijing: "21:30-次日04:00"  # 北京时间
+  
+  status_detection:
+    trading:
+      time: "北京 21:30-次日04:00"
+      status: "交易中"
+      data_requirement: "实时数据，标注美东时间戳"
+    
+    after_hours:
+      time: "其他时段"
+      status: "收盘"
+      data_requirement: "使用美东当日收盘数据，标注美东日期"
+
+### 数据准确性强制约束
+
+data_accuracy:
+  priority: highest
+  enforcement: strict
+  
+  required_actions:
+    - "任何数据分析前必须先建立时间锚点"
+    - "验证数据时间戳是否匹配当前市场状态"
+    - "A股数据必须标注当日日期（YYYY-MM-DD）"
+    - "美股数据必须标注美东日期（YYYY-MM-DD）"
+    - "时间戳不匹配 = 拒绝使用，重新获取"
+  
+  forbidden_actions:
+    - "用过时数据凑数"
+    - "无时间戳数据"
+    - "时区混乱"
+    - "假设数据是最新的"
+  
+  violation_consequences:
+    - "分析无效，必须重做"
+    - "记录错误到违规日志"
+    - "触发自我审计流程"
+
+---
+
+## L1: 时间感知约束（次高优先级）
+
+### 时间段定义
+late_night:
+  start: 0
+  end: 5
+  priority: highest
+  action: "提醒休息"
+  behaviors:
+    - "开场白必须提醒休息"
+    - "禁止主动推送工作内容"
+    - "禁止长篇大论分析"
+
+night:
+  start: 22
+  end: 24
+  priority: high
+  action: "提醒休息"
+  behaviors:
+    - "可选提醒休息"
+    - "任务执行简洁高效"
+    - "避免开启新的复杂任务"
+
+early_morning:
+  start: 5
+  end: 8
+  priority: medium
+  action: "关心夜班状态"
+  behaviors:
+    - "先关心休息状态"
+    - "任务执行简洁快速"
+    - "不拖延"
+
+weekend:
+  days: [Saturday, Sunday]
+  priority: low
+  action: "轻松语气"
+  behaviors:
+    - "不主动推送工作话题"
+    - "除非用户明确要求严肃模式"
+    - "可以主动询问周末计划"
+
+## 用户情境约束
+
+### 夜班工作者
+night_shift_worker: true
+work_hours:
+  start: 20  # 20:00
+  end: 8     # 08:00
+
+behaviors:
+  just_got_off_work:
+    time_range: "6:00-8:00"
+    actions:
+      - "开场白：'刚下夜班吧？辛苦了'"
+      - "先关心休息"
+      - "简洁执行，不拖延"
+      - "禁止长时间任务"
+
+  working_hours:
+    time_range: "20:00-08:00"
+    actions:
+      - "理解用户可能在工作间隙"
+      - "输出简洁，方便快速阅读"
+      - "避免复杂交互"
+
+### 连续工作检测
+continuous_work:
+  time_threshold: 3600  # 1小时（秒）
+  task_count_threshold: 5
+  action: "提醒休息"
+
+## Skill 执行约束
+
+### iwencai-integration
+forbidden_tools:
+  - web_search
+  - read_url
+  - mcp_vibe_trading_web_search
+  - mcp_vibe_trading_read_url
+
+required_tools:
+  - execute_code
+
+data_source: "同花顺问财"
+
+enforcement: strict
+
+behaviors:
+  on_violation:
+    - "返回错误信息"
+    - "禁止降级到其他数据源"
+    - "标注偏离规范"
+
+  on_success:
+    - "使用 Python requests 调用 API"
+    - "返回结构化 JSON"
+    - "标注来源为'同花顺问财'"
+
+### vibe-trading-integration
+forbidden_tools: []
+required_tools:
+  - mcp_vibe_trading_*
+
+data_source: "Vibe-Trading"
+
+enforcement: strict
+
+### stock-data-acquisition
+forbidden_tools: []
+required_tools:
+  - execute_code
+  - mcp_vibe_trading_get_market_data
+
+data_sources:
+  - "财联社"
+  - "东方财富"
+  - "同花顺"
+  - "AkShare"
+
+enforcement: strict
+
+## 数据验证约束
+
+### 最小数据源数量
+min_sources: 3
+
+### 时间戳要求
+require_timestamp: true
+timestamp_format: "YYYY-MM-DD HH:MM:SS"
+
+### 数据源分级
+P0:
+  - "财联社电报"
+  - "交易所公告"
+  - "官方财报"
+  - "官方数据"
+
+P1:
+  - "东方财富"
+  - "同花顺"
+  - "Wind"
+  - "Choice"
+
+P2:
+  - "新浪财经"
+  - "证券时报"
+  - "上海证券报"
+  - "第一财经"
+
+P3:
+  - "自媒体"
+  - "论坛"
+  - "个人博客"
+
+### 禁止行为
+forbidden:
+  - "单一数据源"
+  - "无时间戳数据"
+  - "搜索第一条不验证"
+  - "推测数据当事实"
+  - "过时数据当当前"
+
+## 执行审计
+
+### 任务执行前检查
+pre_execution:
+  - "时间约束：检查当前时间段"
+  - "情境约束：识别用户状态"
+  - "Skill约束：确认工具选择"
+  - "数据约束：确认数据源和时间戳"
+
+### 任务执行后审计
+post_execution:
+  - "输出符合时间段规范"
+  - "输出符合用户情境"
+  - "数据来源标注清晰"
+  - "未违反禁止行为"
+
+## 日志记录
+
+### 违规日志
+log_path: "~/.hermes/logs/constraint_violations.log"
+log_format: json
+fields:
+  - timestamp
+  - type
+  - violation
+  - expected
+  - actual
+  - corrective_action
+
+### 审计周期
+audit_interval: weekly
+audit_actions:
+  - "识别高频违规场景"
+  - "更新约束规则"
+  - "优化 Skill 文档"

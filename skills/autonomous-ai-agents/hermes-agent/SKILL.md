@@ -1,7 +1,7 @@
 ---
 name: hermes-agent
-description: "Configure, extend, or contribute to Hermes Agent."
-version: 2.0.0
+description: Hermes Agent 完整使用和扩展指南 — CLI 用法、设置、配置、生成额外代理、网关平台、skills、语音、工具、配置文件和贡献者参考。帮助用户配置 Hermes、排查问题、生成代理实例或进行代码贡献时加载此 skill。
+version: 2.1.0
 author: Hermes Agent + Teknium
 license: MIT
 metadata:
@@ -26,10 +26,11 @@ What makes Hermes different:
 
 People use Hermes for software development, research, system administration, data analysis, content creation, home automation, and anything else that benefits from an AI agent with persistent context and full system access.
 
-**This skill helps you work with Hermes Agent effectively** — setting it up, configuring features, spawning additional agent instances, troubleshooting issues, finding the right commands and settings, and understanding how the system works when you need to extend or contribute to it.
+## 参考资料
 
-**Docs:** https://hermes-agent.nousresearch.com/docs/
-
+- 官方文档: https://hermes-agent.nousresearch.com/docs
+- GitHub: https://github.com/nousresearch/hermes-agent
+- `references/desktop-pet-implementation.md` - 桌面宠物系统实现笔记（线程安全、单例模式、PIL动画生成）
 ## Quick Start
 
 ```bash
@@ -115,7 +116,7 @@ hermes tools disable NAME   Disable a toolset
 
 hermes skills list          List installed skills
 hermes skills search QUERY  Search the skills hub
-hermes skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
+hermes skills install ID    Install a skill
 hermes skills inspect ID    Preview without installing
 hermes skills config        Enable/disable skills per platform
 hermes skills check         Check for updates
@@ -248,6 +249,7 @@ Type these during an interactive chat session.
 ```
 /config              Show config (CLI)
 /model [name]        Show or change model
+/provider            Show provider info
 /personality [name]  Set personality
 /reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|show|hide)
 /verbose             Cycle: off → new → all → verbose
@@ -281,6 +283,7 @@ Type these during an interactive chat session.
 ### Utility
 ```
 /branch (/fork)      Branch the current session
+/btw                 Ephemeral side question (doesn't interrupt main task)
 /fast                Toggle priority/fast processing
 /browser             Open CDP browser connection
 /history             Show conversation history (CLI)
@@ -311,7 +314,7 @@ Type these during an interactive chat session.
 ```
 ~/.hermes/config.yaml       Main configuration
 ~/.hermes/.env              API keys and secrets
-$HERMES_HOME/skills/        Installed skills
+~/.hermes/skills/           Installed skills
 ~/.hermes/sessions/         Session transcripts
 ~/.hermes/logs/             Gateway and error logs
 ~/.hermes/auth.json         OAuth tokens and credential pools
@@ -336,6 +339,7 @@ Edit with `hermes config edit` or `hermes config set section.key value`.
 | `memory` | `memory_enabled`, `user_profile_enabled`, `provider` |
 | `security` | `tirith_enabled`, `website_blocklist` |
 | `delegation` | `model`, `provider`, `base_url`, `api_key`, `max_iterations` (50), `reasoning_effort` |
+| `smart_model_routing` | `enabled`, `cheap_model` |
 | `checkpoints` | `enabled`, `max_snapshots` (50) |
 
 Full config reference: https://hermes-agent.nousresearch.com/docs/user-guide/configuration
@@ -348,8 +352,8 @@ Full config reference: https://hermes-agent.nousresearch.com/docs/user-guide/con
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `hermes auth` |
-| OpenAI Codex | OAuth | `hermes auth` |
+| Nous Portal | OAuth | `hermes login --provider nous` |
+| OpenAI Codex | OAuth | `hermes login --provider openai-codex` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
@@ -399,63 +403,6 @@ Enable/disable via `hermes tools` (interactive) or `hermes tools enable/disable 
 | `homeassistant` | Smart home control (off by default) |
 
 Tool changes take effect on `/reset` (new session). They do NOT apply mid-conversation to preserve prompt caching.
-
----
-
-## Security & Privacy Toggles
-
-Common "why is Hermes doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a new `hermes` invocation) because they're read once at startup.
-
-### Secret redaction in tool output
-
-Secret redaction is **off by default** — tool output (terminal stdout, `read_file`, web content, subagent summaries, etc.) passes through unmodified. If the user wants Hermes to auto-mask strings that look like API keys, tokens, and secrets before they enter the conversation context and logs:
-
-```bash
-hermes config set security.redact_secrets true       # enable globally
-```
-
-**Restart required.** `security.redact_secrets` is snapshotted at import time — toggling it mid-session (e.g. via `export HERMES_REDACT_SECRETS=true` from a tool call) will NOT take effect for the running process. Tell the user to run `hermes config set security.redact_secrets true` in a terminal, then start a new session. This is deliberate — it prevents an LLM from flipping the toggle on itself mid-task.
-
-Disable again with:
-```bash
-hermes config set security.redact_secrets false
-```
-
-### PII redaction in gateway messages
-
-Separate from secret redaction. When enabled, the gateway hashes user IDs and strips phone numbers from the session context before it reaches the model:
-
-```bash
-hermes config set privacy.redact_pii true    # enable
-hermes config set privacy.redact_pii false   # disable (default)
-```
-
-### Command approval prompts
-
-By default (`approvals.mode: manual`), Hermes prompts the user before running shell commands flagged as destructive (`rm -rf`, `git reset --hard`, etc.). The modes are:
-
-- `manual` — always prompt (default)
-- `smart` — use an auxiliary LLM to auto-approve low-risk commands, prompt on high-risk
-- `off` — skip all approval prompts (equivalent to `--yolo`)
-
-```bash
-hermes config set approvals.mode smart       # recommended middle ground
-hermes config set approvals.mode off         # bypass everything (not recommended)
-```
-
-Per-invocation bypass without changing config:
-- `hermes --yolo …`
-- `export HERMES_YOLO_MODE=1`
-
-Note: YOLO / `approvals.mode: off` does NOT turn off secret redaction. They are independent.
-
-### Shell hooks allowlist
-
-Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.hermes/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
-
-### Disabling the web/browser/image-gen tools
-
-To keep the model away from network or media tools entirely, open `hermes tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
 
 ---
 
@@ -619,6 +566,195 @@ Common gateway problems:
 - **Discord bot silent**: Must enable **Message Content Intent** in Bot → Privileged Gateway Intents.
 - **Slack bot only works in DMs**: Must subscribe to `message.channels` event. Without it, the bot ignores public channels.
 - **Windows HTTP 400 "No models provided"**: Config file encoding issue (BOM). Ensure `config.yaml` is saved as UTF-8 without BOM.
+- **WeChat/Weixin not connecting**: Check `enabled: true` in platform config and verify `WEIXIN_HOME_CHANNEL` has no `@im.wechat` suffix.
+- **Cron job running at wrong time**: A股交易时间需排除午休时段 `11:30-13:00`。使用 `*/5 9-11,13-15 * * 1-5` 而非 `*/5 9-15 * * 1-5`。
+
+### Monitoring script pitfalls
+
+**Token 监控脚本误判导致 Gateway 重启**
+
+**问题**：火山引擎等 API 返回 400 状态码时，监控脚本误判为 Token 失效，触发 Gateway 重启，导致服务中断。
+
+**根因**：监控脚本只区分 200 和非 200，没有区分：
+- **400 Bad Request**：请求参数问题（非 Token 问题）
+- **401/403 Unauthorized**：真正的认证/权限问题
+
+**正确逻辑**：
+```python
+if response.status_code == 200:
+    return True, "Token 有效"
+elif response.status_code in [401, 403]:
+    return False, "Token 失效"
+elif response.status_code == 400:
+    # 400 通常是请求参数问题，检查响应内容
+    try:
+        resp_json = response.json()
+        error_msg = resp_json.get('error', {}).get('message', '')
+        if 'auth' in error_msg.lower() or 'token' in error_msg.lower():
+            return False, f"认证问题: {error_msg}"
+    except:
+        pass
+    # 400 但不是认证问题，Token 仍然有效
+    return True, "Token 有效 (状态码 400 可能是请求参数问题)"
+else:
+    # 其他状态码不触发重启
+    return True, f"状态码 {response.status_code} (不触发重启)"
+```
+
+**错误日志过滤**：
+- ❌ 不要因为飞书权限问题、连接超时等非关键错误触发重启
+- ✅ 只关注真正的认证错误：`InvalidToken`、`401`、`403`、`PermissionDenied`
+- 忽略模式：`Failed to get chat info`、`RemoteProtocolError`、`TimedOut`
+
+**推荐监控脚本**：
+- Token 监控：`~/.hermes/scripts/monitor-token-status.py`（每天凌晨 3:25）
+- Gateway 进程守护：`~/.hermes/scripts/gateway-watchdog.py`（每 5 分钟）
+
+**Crontab 配置示例**：
+```bash
+# Gateway 进程守护 - 每 5 分钟检查
+*/5 * * * * ~/.hermes/hermes-agent/venv/bin/python3 ~/.hermes/scripts/gateway-watchdog.py >> ~/.hermes/logs/gateway-watchdog.log 2>&1
+
+# Token 监控 - 每天凌晨 3:25
+25 3 * * * ~/.hermes/hermes-agent/venv/bin/python3 ~/.hermes/scripts/monitor-token-status.py >> ~/.hermes/logs/token-monitor.log 2>&1
+```
+
+### Common config warnings
+
+#### "unknown config keys ignored"
+```
+WARNING hermes_cli.config
+providers.openrouter: unknown config keys ignored: extra, priority, slug, type
+```
+
+**Cause**: Provider configuration contains fields no longer supported in current Hermes version.
+
+**Supported fields** (check `_KNOWN_KEYS` in `hermes_cli/config.py`):
+- `name`, `api`, `url`, `base_url`, `api_key`, `key_env`
+- `api_mode`, `transport`, `model`, `default_model`, `models`
+- `context_length`, `rate_limit_delay`
+
+**Unsupported fields** (remove these):
+- `extra` — timeout/retry settings moved to top-level config
+- `priority` — no longer used
+- `slug` — redundant with `name`
+- `type` — auto-detected from `base_url`
+- `available_models` — renamed to `models`
+
+**Fix**:
+```yaml
+# ❌ Before (old format)
+providers:
+  openrouter:
+    api_key: ${OPENROUTER_API_KEY}
+    base_url: https://openrouter.ai/api/v1
+    default_model: openrouter/free
+    extra:
+      max_retries: 3
+      timeout: 600
+    name: openrouter
+    priority: 10
+    slug: openrouter
+    type: openai
+
+# ✅ After (current format)
+providers:
+  openrouter:
+    api_key: ${OPENROUTER_API_KEY}
+    base_url: https://openrouter.ai/api/v1
+    default_model: openrouter/free
+    name: openrouter
+```
+
+#### API Server "No API key configured" warning
+```
+WARNING gateway.platforms.api_server
+[Api_Server] ⚠️ No API key configured (API_SERVER_KEY / platforms.api_server.key).
+```
+
+**Cause**: API key configured at wrong nesting level.
+
+**Wrong** (key at top level):
+```yaml
+platforms:
+  api_server:
+    enabled: true
+    extra:
+      host: 127.0.0.1
+      port: 8642
+    key: "your-api-key"  # ❌ Wrong location
+```
+
+**Correct** (key inside extra):
+```yaml
+platforms:
+  api_server:
+    enabled: true
+    extra:
+      host: 127.0.0.1
+      key: "your-api-key"  # ✅ Correct location
+      port: 8642
+```
+
+**Verification**:
+```bash
+# Without auth - should fail
+curl http://127.0.0.1:8642/v1/models
+# {"error": {"message": "Invalid API key"}}
+
+# With auth - should succeed
+curl -H "Authorization: Bearer your-api-key" http://127.0.0.1:8642/v1/models
+# {"object": "list", "data": [...]}
+```
+
+**Root cause**: API server reads key from `extra.get("key", ...)` (line 575 in `gateway/platforms/api_server.py`), not from top-level `platforms.api_server.key`.
+
+#### Platform not connecting or missing enabled flag
+
+**Symptom**: Platform shows in `send_message list` but doesn't actually connect, or push notifications fail.
+
+**Cause**: Missing `enabled: true` in platform configuration.
+
+**Example** (WeChat):
+```yaml
+# ❌ Before - missing enabled flag
+platforms:
+  weixin:
+    extra:
+      send_chunk_delay_seconds: "0.8"
+      send_chunk_retries: "3"
+
+# ✅ After - explicitly enabled
+platforms:
+  weixin:
+    enabled: true  # ← Add this
+    extra:
+      send_chunk_delay_seconds: "0.8"
+      send_chunk_retries: "3"
+```
+
+**Check platform connection**:
+```bash
+tail -100 ~/.hermes/logs/gateway.log | grep -i "weixin\|wecom\|telegram"
+```
+
+#### HOME_CHANNEL format errors
+
+**Symptom**: "No home channel set" error even though config has `WEIXIN_HOME_CHANNEL` set.
+
+**Cause**: Channel ID includes platform-specific suffix.
+
+**Wrong**:
+```yaml
+WEIXIN_HOME_CHANNEL: o9cq80znDxnUb_ojFoc-8kBCdqdE@im.wechat  # ❌ Has suffix
+```
+
+**Correct**:
+```yaml
+WEIXIN_HOME_CHANNEL: o9cq80znDxnUb_ojFoc-8kBCdqdE  # ✅ User ID only
+```
+
+The `@im.wechat` suffix is added internally by the platform adapter — don't include it in the config.
 
 ### Auxiliary models not working
 If `auxiliary` tasks (vision, compression, session_search) fail silently, the `auto` provider can't find a backend. Either set `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`, or explicitly configure each auxiliary task's provider:
@@ -704,9 +840,9 @@ registry.register(
 )
 ```
 
-**2. Add to `toolsets.py`** → `_HERMES_CORE_TOOLS` list.
+**2. Add import** in `model_tools.py` → `_discover_tools()` list.
 
-Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` call is imported automatically — no manual list needed.
+**3. Add to `toolsets.py`** → `_HERMES_CORE_TOOLS` list.
 
 All handlers must return JSON strings. Use `get_hermes_home()` for paths, never hardcode `~/.hermes`.
 
@@ -758,3 +894,469 @@ Types: `fix:`, `feat:`, `refactor:`, `docs:`, `chore:`
 - Use `get_hermes_home()` from `hermes_constants` for all paths (profile-safe)
 - Config values go in `config.yaml`, secrets go in `.env`
 - New tools need a `check_fn` so they only appear when requirements are met
+
+---
+
+## Safety & Security Checklist
+
+### Dangerous Operations (Require Confirmation)
+
+These operations trigger approval prompts unless `--yolo` is set:
+
+| Operation | Risk Level | Impact |
+|-----------|------------|--------|
+| `rm -rf` / `rmdir` | 🔴 Critical | Irreversible file deletion |
+| `git push --force` | 🔴 Critical | History rewrite, data loss |
+| `DROP TABLE` / `TRUNCATE` | 🔴 Critical | Database data loss |
+| `sudo` commands | 🟠 High | System-level changes |
+| `chmod 777` | 🟠 High | Security exposure |
+| `curl | bash` | 🟠 High | Arbitrary code execution |
+| `pip install` from git | 🟡 Medium | Unverified code |
+| Environment variable changes | 🟡 Medium | May break auth |
+
+### Pre-Operation Verification Checklist
+
+Before executing potentially destructive operations:
+
+```
+□ Verify current working directory (avoid accidental deletion)
+□ Check git status (uncommitted changes warning)
+□ Confirm target paths exist
+□ Validate user intent with explicit confirmation
+□ Create checkpoint if filesystem changes expected (/rollback available)
+```
+
+### Security Best Practices
+
+1. **Never hardcode API keys** in code or skills — use `.env` or `hermes auth add`
+2. **Use credential pools** for API key rotation — `hermes auth list` to check status
+3. **Review webhook endpoints** before exposing — `hermes webhook list`
+4. **Audit cron jobs** regularly — `hermes cron list` to check for suspicious tasks
+5. **Check gateway pairing** — `hermes pairing list` to see authorized DM sources
+
+---
+
+## Checkpoints & Rollback
+
+### Creating Checkpoints
+
+```bash
+# Enable checkpoints globally
+hermes config set checkpoints.enabled true
+
+# Or per-session (CLI)
+/hermes chat --checkpoints
+
+# Checkpoint triggers automatically before:
+# - File modifications via patch tool
+# - Git operations (commit, push, merge)
+# - Package installations
+```
+
+### Rollback Procedure
+
+```
+1. /rollback           # List available checkpoints
+2. /rollback 2         # Rollback to checkpoint 2 (most recent is 1)
+3. Verify changes: git status, file comparison
+4. If wrong: /rollback 1 to undo the rollback
+```
+
+### Checkpoint Limits
+
+- Default: 50 snapshots (`checkpoints.max_snapshots`)
+- Older checkpoints auto-purged
+- Each checkpoint ~1-5MB depending on changes
+- Location: `~/.hermes/checkpoints/`
+
+---
+
+## Boundary Conditions & Limits
+
+### Token Limits
+
+| Scenario | Limit | Behavior |
+|----------|-------|----------|
+| Context window | Model-specific (4K-200K) | Auto-compression at 50% threshold |
+| Single response | Provider-specific | Truncation or error |
+| Tool output | ~10K chars per result | Truncated with warning |
+| Session history | Configurable | Old messages compressed |
+
+### Rate Limits
+
+```yaml
+# In config.yaml - rate limit handling
+model:
+  rate_limit_delay: 1.0  # Seconds between requests
+  max_retries: 3         # Retry attempts on 429
+```
+
+### Concurrency Limits
+
+| Resource | Limit | Configuration |
+|----------|-------|---------------|
+| Background processes | 10 per session | Hard limit |
+| Parallel tool calls | 5 per turn | Provider-specific |
+| MCP connections | 20 | Hard limit |
+| Gateway platforms | 15 active | Recommended max |
+
+### Recovery from Limit Errors
+
+```
+1. Token limit hit → Context compression triggers automatically
+2. Rate limit (429) → Auto-retry with exponential backoff
+3. Connection timeout → Check network, increase timeout in config
+4. Memory exhausted → Restart gateway, check for memory leaks
+```
+
+---
+
+## Exception Handling Guide
+
+### Common Exceptions & Recovery
+
+| Exception | Cause | Recovery |
+|-----------|-------|----------|
+| `ContextLengthExceeded` | Token limit | `/compress` or `/reset` |
+| `AuthenticationError` | Invalid/expired key | `hermes login` or check `.env` |
+| `RateLimitError` | Too many requests | Wait or use credential pool |
+| `ToolExecutionError` | Tool precondition failed | Check requirements, fix params |
+| `SessionNotFoundError` | Session ID invalid | `hermes sessions list` to find valid ID |
+| `ProviderUnavailable` | Provider down | Switch provider: `/model` |
+| `GatewayDisconnected` | Platform connection lost | `/restart` gateway |
+| `CheckpointCorrupted` | Disk issue | Delete corrupted checkpoint, recreate |
+
+### Error Code Reference
+
+```
+E001: API key missing or invalid
+E002: Model not available in current provider
+E003: Tool not enabled for platform
+E004: Session store corrupted
+E005: Gateway authentication failed
+E006: File permission denied
+E007: Network timeout
+E008: Context length exceeded
+E009: Invalid configuration
+E010: MCP server connection failed
+```
+
+### Graceful Degradation
+
+When primary features fail, fallback options:
+
+| Primary | Fallback | Action |
+|---------|----------|--------|
+| Primary provider | Secondary in pool | Auto-switch |
+| Memory backend | Built-in SQLite | Auto-fallback |
+| Browser automation | Simple HTTP fetch | Manual switch |
+| TTS service | Text-only response | Auto-silent |
+| STT service | Text input only | Manual type |
+
+---
+
+## Debugging & Observability
+
+### Debug Mode
+
+```bash
+# Enable verbose logging
+hermes chat -v                          # CLI verbose mode
+hermes config set display.verbose true  # Persistent
+
+# Check logs
+tail -f ~/.hermes/logs/gateway.log      # Gateway activity
+tail -f ~/.hermes/logs/error.log        # Errors only
+
+# Log levels: DEBUG, INFO, WARNING, ERROR
+hermes config set logging.level DEBUG
+```
+
+### Health Check Commands
+
+```bash
+hermes doctor                    # Full diagnostic
+hermes status --all              # All components
+hermes gateway status            # Gateway health
+hermes mcp list                  # MCP server status
+hermes tools list                # Tool availability
+hermes auth list                 # Credential status
+```
+
+### Performance Monitoring
+
+```bash
+hermes insights --days 7         # Usage analytics
+/usage                           # Token usage in session
+hermes sessions stats            # Session storage stats
+```
+
+### Debug Checklist
+
+When something doesn't work:
+
+```
+□ hermes doctor --fix           # Auto-fix common issues
+□ Check logs: ~/.hermes/logs/
+□ Verify config: hermes config check
+□ Test provider: hermes model → test connection
+□ Check toolset: hermes tools list
+□ Try /reset or restart gateway
+□ Search issues: github.com/NousResearch/hermes-agent/issues
+```
+
+---
+
+## Version Compatibility
+
+### Breaking Changes by Version
+
+| Version | Breaking Change | Migration |
+|---------|-----------------|-----------|
+| 2.0.0 | Provider config structure changed | `hermes config migrate` |
+| 2.0.0 | Session store format updated | Auto-migration on first run |
+| 1.5.0 | Tool names standardized | Update custom skills |
+
+### Compatibility Matrix
+
+| Feature | Min Version | Recommended |
+|---------|-------------|-------------|
+| MCP servers | 1.8.0 | 2.0.0+ |
+| Credential pools | 1.9.0 | 2.0.0+ |
+| Checkpoints | 1.10.0 | 2.0.0+ |
+| Delegation tool | 2.0.0 | 2.0.0+ |
+
+### Update Procedure
+
+```bash
+hermes update                   # Update to latest
+hermes config migrate           # Migrate config if needed
+hermes doctor --fix             # Fix any issues
+hermes skills update            # Update installed skills
+```
+
+---
+
+## Operation Verification Checkpoints
+
+### Post-Setup Verification
+
+After `hermes setup`:
+
+```
+□ hermes doctor passes
+□ hermes config check shows no warnings
+□ Test chat: hermes chat -q "Hello"
+□ Tools available: hermes tools list
+```
+
+### Post-Gateway Start Verification
+
+After `hermes gateway start`:
+
+```
+□ hermes gateway status shows "running"
+□ Check logs: tail -20 ~/.hermes/logs/gateway.log
+□ Test from platform: send a message
+□ /platforms in gateway shows connected
+```
+
+### Post-Skill-Install Verification
+
+After `hermes skills install <id>`:
+
+```
+□ hermes skills list shows new skill
+□ /skill <name> loads successfully
+□ Skill content visible in session
+□ No import errors in logs
+```
+
+### Post-Config-Change Verification
+
+After editing config.yaml:
+
+```
+□ hermes config check passes
+□ No "unknown config keys" warnings
+□ Restart CLI/gateway to apply
+□ Test affected feature works
+```
+
+---
+
+## ✅ Done When 完成判据
+
+> **核心思想**：从"我猜我做完了"变成"我能确认我做完了"
+
+### 四大支柱
+
+| 支柱 | 说明 | 本 Skill 对应 |
+|------|------|--------------|
+| **Goal** | 任务目标 | 成功配置/使用 Hermes Agent 并验证功能正常 |
+| **Context** | 上下文来源 | 用户需求 + 当前环境状态 |
+| **Constraints** | 约束条件 | 配置文件结构、API 密钥、系统依赖 |
+| **Done When** | 完成判据 | 下方必检项 |
+
+### 必检项（全部满足才算完成）
+
+#### 【任务：Hermes 安装与配置】
+
+- [ ] **安装成功验证**
+  - `hermes --version` 返回版本号
+  - `hermes doctor` 通过所有检查
+  - 配置文件已创建（`~/.hermes/config.yaml`）
+  - **验证方法**：`hermes doctor` 无错误输出
+
+- [ ] **模型配置正确**
+  - Provider 已配置（`hermes model` 显示）
+  - API 密钥已设置（`.env` 文件或 `hermes auth`）
+  - 测试连接成功（发送测试消息）
+  - **验证方法**：`hermes chat -q "Hello"` 返回正常响应
+
+- [ ] **工具集启用正确**
+  - 必要工具已启用（`hermes tools list`）
+  - 工具依赖已满足（如 browser 需要 browserbase token）
+  - **验证方法**：`hermes tools` 显示工具状态为 enabled
+
+#### 【任务：Gateway 平台配置】
+
+- [ ] **Gateway 启动成功**
+  - `hermes gateway status` 显示 running
+  - 日志无错误（`tail -20 ~/.hermes/logs/gateway.log`）
+  - 进程持久化（systemd/launchd）
+  - **验证方法**：`hermes gateway status` 返回 "running"
+
+- [ ] **平台连接成功**
+  - 平台配置正确（`~/.hermes/config.yaml` 的 platforms 部分）
+  - `enabled: true` 已设置
+  - Home channel 已设置（如需要）
+  - `/platforms` 显示已连接
+  - **验证方法**：从平台发送测试消息，Hermes 正常响应
+
+- [ ] **Webhook/配对已配置**
+  - Webhook 路由已创建（`hermes webhook list`）
+  - DM 配对已授权（`hermes pairing list`）
+  - **验证方法**：测试 webhook 或 DM 消息到达
+
+#### 【任务：Skill 安装与使用】
+
+- [ ] **Skill 安装成功**
+  - `hermes skills list` 显示新 Skill
+  - Skill 文件已下载到 `~/.hermes/skills/`
+  - 无导入错误（日志检查）
+  - **验证方法**：`hermes skills list` 包含目标 Skill
+
+- [ ] **Skill 可加载**
+  - `/skill <name>` 成功加载
+  - Skill 内容在会话中可见
+  - 功能可用（如有特定功能）
+  - **验证方法**：`/skill <name>` 无错误输出
+
+#### 【任务：Cron Job 配置】
+
+- [ ] **Cron Job 创建成功**
+  - `hermes cron list` 显示新 Job
+  - Schedule 格式正确（cron 表达式或简写）
+  - Prompt 已设置
+  - Delivery 目标已配置
+  - **验证方法**：`hermes cron list` 显示目标 Job
+
+- [ ] **Cron Job 运行正常**
+  - 等待触发时间到达
+  - 检查执行日志（`~/.hermes/logs/cron.log`）
+  - 结果已送达目标平台
+  - **验证方法**：目标平台收到消息
+
+#### 【任务：问题排查】
+
+- [ ] **问题已诊断**
+  - `hermes doctor` 已运行
+  - 日志已检查（`~/.hermes/logs/`）
+  - 配置已验证（`hermes config check`）
+  - 根因已识别
+  - **验证方法**：输出包含问题诊断结果
+
+- [ ] **修复已验证**
+  - 修复措施已执行
+  - `hermes doctor --fix` 通过
+  - 功能恢复正常
+  - **验证方法**：原问题不再出现
+
+### 可选项（加分项）
+
+- [ ] **性能优化完成**
+  - Token 使用优化（`hermes insights`）
+  - 响应时间优化
+  - 内存使用优化
+  - **验证方法**：`hermes insights --days 7` 显示改善
+
+- [ ] **多 Provider 配置完成**
+  - Credential pool 已配置（`hermes auth list`）
+  - Fallback provider 已设置
+  - 自动切换测试通过
+  - **验证方法**：禁用主 provider，自动切换到备选
+
+- [ ] **Profile 配置完成**
+  - 多个 Profile 已创建（`hermes profile list`）
+  - 独立配置已隔离
+  - Profile 切换正常
+  - **验证方法**：`hermes profile use <name>` 切换成功
+
+### 失败处理
+
+| 失败场景 | 处理路径 | 用户提示 |
+|---------|---------|---------|
+| 安装失败 | 检查依赖 + 重试 | ❌ 安装失败，请检查依赖：Python 3.8+, pip |
+| API 密钥无效 | 重新配置 | ⚠️ API 密钥无效，请运行 `hermes login` 或检查 `.env` |
+| Gateway 启动失败 | 检查日志 + 端口冲突 | ⚠️ Gateway 启动失败，检查日志：`tail -20 ~/.hermes/logs/gateway.log` |
+| 平台连接失败 | 检查配置 + 重新授权 | ⚠️ 平台连接失败，请检查 `platforms` 配置或重新授权 |
+| Skill 加载失败 | 检查依赖 + 重新安装 | ⚠️ Skill 加载失败，请检查依赖或重新安装 |
+
+### 自检代码示例
+
+```python
+def verify_done_when(task_type):
+    """验证 Done When 是否满足"""
+    
+    if task_type == 'setup':
+        # 检查安装
+        assert subprocess.run(['hermes', '--version']).returncode == 0
+        
+        # 检查 doctor
+        result = subprocess.run(['hermes', 'doctor'], capture_output=True)
+        assert result.returncode == 0
+        
+        # 检查配置文件
+        assert os.path.exists(os.path.expanduser('~/.hermes/config.yaml'))
+    
+    elif task_type == 'gateway':
+        # 检查 gateway 状态
+        result = subprocess.run(['hermes', 'gateway', 'status'], capture_output=True)
+        assert 'running' in result.stdout.decode()
+        
+        # 检查日志无错误
+        log_file = os.path.expanduser('~/.hermes/logs/gateway.log')
+        with open(log_file, 'r') as f:
+            recent_logs = f.readlines()[-50:]
+            assert not any('ERROR' in line for line in recent_logs)
+    
+    elif task_type == 'skill':
+        # 检查 skill 列表
+        result = subprocess.run(['hermes', 'skills', 'list'], capture_output=True)
+        assert skill_name in result.stdout.decode()
+        
+        # 检查 skill 文件
+        skill_path = os.path.expanduser(f'~/.hermes/skills/{skill_name}/SKILL.md')
+        assert os.path.exists(skill_path)
+    
+    elif task_type == 'cron':
+        # 检查 cron 列表
+        result = subprocess.run(['hermes', 'cron', 'list'], capture_output=True)
+        assert job_id in result.stdout.decode()
+        
+        # 检查下次运行时间
+        assert 'next run' in result.stdout.decode().lower()
+    
+    return True  # 所有检查通过
+```

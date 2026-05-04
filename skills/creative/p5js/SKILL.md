@@ -1,6 +1,6 @@
 ---
 name: p5js
-description: "p5.js sketches: gen art, shaders, interactive, 3D."
+description: "使用 p5.js 的交互式和生成式视觉艺术生产流程。创建基于浏览器的草图、生成艺术、数据可视化、交互体验、3D 场景、音频响应视觉和动态图形 — 导出为 HTML、PNG、GIF、MP4 或 SVG。覆盖：2D/3D 渲染、噪声和粒子系统、流场、着色器 (GLSL)、像素操作、动态排版、WebGL 场景、音频分析、鼠标/键盘交互和无头高分辨率导出。"
 version: 1.0.0
 metadata:
   hermes:
@@ -9,14 +9,6 @@ metadata:
 ---
 
 # p5.js Production Pipeline
-
-## When to use
-
-Use when users request: p5.js sketches, creative coding, generative art, interactive visualizations, canvas animations, browser-based visual art, data viz, shader effects, or any p5.js project.
-
-## What's inside
-
-Production pipeline for interactive and generative visual art using p5.js. Creates browser-based sketches, generative art, data visualizations, interactive experiences, 3D scenes, audio-reactive visuals, and motion graphics — exported as HTML, PNG, GIF, MP4, or SVG. Covers: 2D/3D rendering, noise and particle systems, flow fields, shaders (GLSL), pixel manipulation, kinetic typography, WebGL scenes, audio analysis, mouse/keyboard interaction, and headless high-res export.
 
 ## Creative Standard
 

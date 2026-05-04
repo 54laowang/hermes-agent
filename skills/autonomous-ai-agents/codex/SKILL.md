@@ -1,6 +1,6 @@
 ---
 name: codex
-description: "Delegate coding to OpenAI Codex CLI (features, PRs)."
+description: 将编码任务委派给 OpenAI Codex CLI 代理。用于构建功能、重构、PR 审查和批量修复 issues。需要 codex CLI 和 git 仓库。
 version: 1.0.0
 author: Hermes Agent
 license: MIT
@@ -13,15 +13,6 @@ metadata:
 # Codex CLI
 
 Delegate coding tasks to [Codex](https://github.com/openai/codex) via the Hermes terminal. Codex is OpenAI's autonomous coding agent CLI.
-
-## When to use
-
-- Building features
-- Refactoring
-- PR reviews
-- Batch issue fixing
-
-Requires the codex CLI and a git repository.
 
 ## Prerequisites
 
@@ -120,3 +111,57 @@ terminal(command="gh pr comment 86 --body '<review>'", workdir="~/project")
 5. **Background for long tasks** — use `background=true` and monitor with `process` tool
 6. **Don't interfere** — monitor with `poll`/`log`, be patient with long-running tasks
 7. **Parallel is fine** — run multiple Codex processes at once for batch work
+
+---
+
+## Prompting Best Practices (from Codex App)
+
+### 四大支柱
+
+1. **Goal** —— 你到底要做什么
+2. **Context** —— 相关文件/文件夹/文档（**反直觉建议：少用显式路径，让模型做语义检索**）
+3. **Constraints** —— 代码看不出来的隐性规则
+4. **Done When** —— 完成判据（**最关键的杠杆**）
+
+### Done When 示例
+
+```
+# 差的 prompt
+codex exec "Add error handling to the API"
+
+# 好的 prompt（包含 Done When）
+codex exec "Add error handling to the API. Done when:
+- All endpoints return proper error codes
+- Errors are logged with context
+- Unit tests pass for error cases"
+```
+
+### 模型与推理强度分层
+
+```
+日常任务：默认模型 + medium 推理
+子Agent：  降级模型 + low/medium（调研、日志解析）
+硬骨头：   主力模型 + extra high（复杂bug、大型重构）
+```
+
+### 子 Agent 双重价值
+
+- **并行加速**（常见用法）
+- **保护主线程上下文**（更重要）—— 委派输出量大的任务，主线程只接收摘要
+
+**判断标准**：
+- 输出量大的任务（日志解析、文件搜索）→ 委派给子Agent
+- 推理量大的任务（代码审查、方案设计）→ 主线程
+- 需要用户交互的任务 → 主线程
+
+---
+
+## Codex vs Claude Code 战略差异
+
+| 维度 | Claude Code | Codex |
+|------|-------------|-------|
+| 形态 | 终端/TUI | IDE 富交互 + CLI |
+| 方向 | 本地共生 | 云端协作（GitHub/Slack/Linear） |
+| 用户 | 纯工程师 | 更大人群（想造东西但不想学全部工程仪式） |
+
+**CLI 的局限性**：终端形态的天花板是 TUI —— 再炫也只是 ASCII。Codex App 的 In-App Browser、图像生成、Computer Use 这些能力，CLI 无法使用。

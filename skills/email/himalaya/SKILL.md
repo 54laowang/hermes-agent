@@ -1,6 +1,6 @@
 ---
 name: himalaya
-description: "Himalaya CLI: IMAP/SMTP email from terminal."
+description: 通过 IMAP/SMTP 管理邮件的 CLI。使用 himalaya 从终端列出、阅读、撰写、回复、转发、搜索和整理邮件。支持多账户和 MML (MIME Meta Language) 消息撰写。
 version: 1.0.0
 author: community
 license: MIT

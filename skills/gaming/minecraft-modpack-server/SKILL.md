@@ -1,6 +1,6 @@
 ---
 name: minecraft-modpack-server
-description: "Host modded Minecraft servers (CurseForge, Modrinth)."
+description: 从 CurseForge/Modrinth 服务器包 zip 搭建 Mod 版 Minecraft 服务器。覆盖 NeoForge/Forge 安装、Java 版本、JVM 调优、防火墙、局域网配置、备份和启动脚本。
 tags: [minecraft, gaming, server, neoforge, forge, modpack]
 ---
 

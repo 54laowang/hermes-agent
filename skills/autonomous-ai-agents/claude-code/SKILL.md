@@ -1,6 +1,6 @@
 ---
 name: claude-code
-description: "Delegate coding to Claude Code CLI (features, PRs)."
+description: 将编码任务委派给 Claude Code（Anthropic 的 CLI 代理）。用于构建功能、重构、PR 审查和迭代编码。需要安装 claude CLI。
 version: 2.2.0
 author: Hermes Agent + Teknium
 license: MIT
@@ -715,6 +715,39 @@ Use `/context` in interactive mode to see a colored grid of context usage. Key t
 10. **Start new sessions for distinct tasks** — sessions last 5 hours; fresh context is more efficient.
 11. **Use `--no-session-persistence`** in CI to avoid accumulating saved sessions on disk.
 
+## 设计哲学：98.4%是工程，不是AI
+
+> **核心理念**：模型能力再强，如果没有好的"Harness"（鞍具），也无法在具体项目中发挥价值。详见 `references/architecture-design-philosophy.md`。
+
+### Harness隐喻
+
+> 「一匹马可以跑得很快很有力，但它自己不知道往哪儿走：整套挽具决定了它的方向。」
+
+- **方向盘**：指引方向（CLAUDE.md、Skills）
+- **刹车**：安全保障（Hooks、权限系统）
+- **导航**：上下文理解（上下文管理、文档）
+
+### 能力占比真相
+
+| 维度 | 传统认知 | 实际真相 |
+|------|----------|----------|
+| AI能力占比 | 认为是核心 | 仅占1.6% |
+| 工程架构占比 | 被忽视 | **占98.4%** |
+
+### 今天就能做的3件事
+
+1. **建立CLAUDE.md**：10分钟写完架构规则、命名约定、踩过的坑。AI犯错时先问：CLAUDE.md里缺了什么？
+2. **把重复做事变成Skill**：Code review、commit message、发布说明——不该每天手敲提示词
+3. **在踩坑地方加Hook**：最有杠杆的部分，用确定性代码做强制检查，不依赖AI变聪明
+
+### 关键洞察
+
+- **Hook的核心不在写代码，而在写规则**
+- **不换模型，优化Harness也能显著提升效果**（LangChain案例：52.8→66.5）
+- **工程师价值从"我能写多少行代码"转向"我能为AI设计多严格的工作环境"**
+
+---
+
 ## Pitfalls & Gotchas
 
 1. **Interactive mode REQUIRES tmux** — Claude Code is a full TUI app. Using `pty=true` alone in Hermes terminal works but tmux gives you `capture-pane` for monitoring and `send-keys` for input, which is essential for orchestration.
@@ -742,3 +775,359 @@ Use `/context` in interactive mode to see a colored grid of context usage. Key t
 8. **Report results to user** — after completion, summarize what Claude did and what changed
 9. **Don't kill slow sessions** — Claude may be doing multi-step work; check progress instead
 10. **Use `--allowedTools`** — restrict capabilities to what the task actually needs
+
+---
+
+## 📋 检查点设计
+
+### 检查点 1：环境准备验证
+
+**【前置检查】执行任务前必须验证**：
+
+```bash
+# 检查Claude Code是否安装
+which claude && claude --version
+
+# 检查认证状态
+claude auth status --text
+
+# 检查工作目录
+test -d "/path/to/project" && echo "✓ 目录存在" || echo "✗ 目录不存在"
+```
+
+**验证清单**：
+- [ ] Claude Code已安装（v2.x+）
+- [ ] 认证状态有效（Pro/Max或API Key）
+- [ ] 工作目录存在且可访问
+- [ ] tmux已安装（如需交互模式）
+
+---
+
+### 检查点 2：Print Mode执行验证
+
+**【执行中监控】Print Mode关键指标**：
+
+```bash
+# 执行并捕获退出码
+claude -p "任务描述" --max-turns 10 --allowedTools "Read,Edit"
+exit_code=$?
+
+# 检查退出码
+if [ $exit_code -eq 0 ]; then
+    echo "✓ 任务成功完成"
+else
+    echo "✗ 任务失败，退出码: $exit_code"
+fi
+```
+
+**验证清单**：
+- [ ] 命令退出码为0（成功）
+- [ ] 输出内容符合预期
+- [ ] 文件修改已生效（如有）
+- [ ] 未超过max-turns限制
+
+---
+
+### 检查点 3：Interactive Mode会话验证
+
+**【会话管理】Interactive Mode关键节点**：
+
+```bash
+# 1. 启动tmux会话
+tmux new-session -d -s claude-work -x 140 -y 40
+echo "✓ tmux会话已创建"
+
+# 2. 启动Claude并等待初始化
+tmux send-keys -t claude-work 'cd /project && claude' Enter
+sleep 5  # 等待初始化
+
+# 3. 处理信任对话框
+tmux send-keys -t claude-work Enter
+sleep 3
+
+# 4. 验证Claude已就绪（检查提示符）
+tmux capture-pane -t claude-work -p -S -5 | grep "❯" && echo "✓ Claude已就绪"
+```
+
+**验证清单**：
+- [ ] tmux会话创建成功
+- [ ] Claude初始化完成
+- [ ] 信任对话框已处理
+- [ ] Claude提示符可见（❯）
+
+---
+
+### 检查点 4：任务完成验证
+
+**【结果验证】任务完成后必须检查**：
+
+```bash
+# Print Mode结果验证
+claude -p "任务描述" --output-format json 2>&1 | jq -r '.status'
+# 期望输出: "success" 或 "completed"
+
+# Interactive Mode进度检查
+tmux capture-pane -t claude-work -p -S -50 | grep -E "(完成|finished|done|❯)"
+# 期望看到完成标志或新的提示符
+
+# 文件修改验证
+git status --short  # 检查是否有预期的文件变更
+git diff --stat     # 检查修改范围
+```
+
+**验证清单**：
+- [ ] 任务状态为success/completed
+- [ ] 文件修改符合预期
+- [ ] 无错误或警告信息
+- [ ] 代码可编译/运行（如适用）
+
+---
+
+## ⚠️ 异常处理
+
+### 异常类型1：认证失败
+
+**症状**：
+```
+Error: Not authenticated. Run 'claude auth login' first.
+```
+
+**恢复流程**：
+```bash
+# 1. 检查认证状态
+claude auth status
+
+# 2. 重新认证
+claude auth login  # 浏览器OAuth
+# 或
+claude auth login --console  # API Key
+
+# 3. 验证认证成功
+claude auth status --text | grep "Logged in"
+```
+
+---
+
+### 异常类型2：工作目录不存在
+
+**症状**：
+```
+Error: Directory '/path/to/project' does not exist
+```
+
+**恢复流程**：
+```bash
+# 1. 验证目录路径
+pwd
+ls -la /path/to/project
+
+# 2. 创建目录（如需要）
+mkdir -p /path/to/project
+
+# 3. 重新执行任务
+cd /path/to/project && claude -p "任务描述"
+```
+
+---
+
+### 异常类型3：超时或卡死
+
+**症状**：
+- Print Mode长时间无输出（>5分钟）
+- Interactive Mode无响应（>10分钟）
+
+**恢复流程**：
+```bash
+# Print Mode
+# 1. 中断当前命令（Ctrl+C）
+# 2. 降低max-turns
+claude -p "任务描述" --max-turns 5
+
+# Interactive Mode
+# 1. 检查会话状态
+tmux capture-pane -t claude-work -p -S -50
+
+# 2. 强制退出并重启
+tmux kill-session -t claude-work
+tmux new-session -d -s claude-work
+```
+
+---
+
+### 异常类型4：权限被拒绝
+
+**症状**：
+```
+Error: Permission denied: /path/to/file
+```
+
+**恢复流程**：
+```bash
+# 1. 检查文件权限
+ls -la /path/to/file
+
+# 2. 修改权限（如需要）
+chmod 644 /path/to/file  # 文件
+chmod 755 /path/to/dir   # 目录
+
+# 3. 重新执行任务
+claude -p "任务描述"
+```
+
+---
+
+### 异常类型5：模型过载
+
+**症状**：
+```
+Error: Model overloaded. Please retry.
+```
+
+**恢复流程**：
+```bash
+# 1. 使用fallback模型
+claude -p "任务描述" --fallback-model haiku
+
+# 2. 或直接使用Haiku
+claude -p "任务描述" --model haiku
+
+# 3. 等待后重试
+sleep 60 && claude -p "任务描述"
+```
+
+---
+
+### 异常类型6：上下文窗口溢出
+
+**症状**：
+```
+Error: Context window exceeded. Use /compact or reduce input size.
+```
+
+**恢复流程**：
+```bash
+# Interactive Mode
+tmux send-keys -t claude-work '/compact' Enter
+sleep 5
+
+# Print Mode
+# 1. 减少输入文件数量
+claude -p "分析单个文件" --allowedTools "Read"
+
+# 2. 或使用更短的提示词
+claude -p "简要分析 auth.py"
+```
+
+---
+
+### 异常类型7：tmux会话冲突
+
+**症状**：
+```
+duplicate session
+```
+
+**恢复流程**：
+```bash
+# 1. 列出现有会话
+tmux list-sessions
+
+# 2. 杀死旧会话
+tmux kill-session -t claude-work
+
+# 3. 创建新会话
+tmux new-session -d -s claude-work
+```
+
+---
+
+### 异常类型8：预算超限
+
+**症状**：
+```
+Error: Budget exceeded ($X.XX used, limit was $Y.YY)
+```
+
+**恢复流程**：
+```bash
+# 1. 提高预算限制
+claude -p "任务描述" --max-budget-usd 1.00
+
+# 2. 或使用更便宜的模型
+claude -p "任务描述" --model haiku
+
+# 3. 减少max-turns
+claude -p "任务描述" --max-turns 3
+```
+
+---
+
+## 🎯 边界条件
+
+### 资源边界
+
+| 资源 | 最小值 | 最大值 | 推荐值 | 说明 |
+|------|--------|--------|--------|------|
+| **max-turns** | 1 | 100 | 5-20 | Print Mode专用 |
+| **max-budget-usd** | $0.05 | 无限制 | $0.10-1.00 | 最低$0.05用于缓存 |
+| **上下文窗口** | - | 200K tokens | <70% | 超过70%质量下降 |
+| **会话时长** | - | 5小时 | 1-2小时 | 之后需新会话 |
+
+### 并发边界
+
+| 场景 | 限制 | 说明 |
+|------|------|------|
+| **Print Mode并发** | 建议≤3个 | 避免API限流 |
+| **Interactive Mode会话** | 建议≤2个 | tmux资源消耗 |
+| **文件操作** | 单次≤100文件 | 避免上下文溢出 |
+
+### 性能边界
+
+| 指标 | 目标值 | 告警阈值 | 说明 |
+|------|--------|----------|------|
+| **Print Mode响应时间** | <30秒 | >60秒 | 简单任务 |
+| **Interactive Mode首次响应** | <10秒 | >20秒 | 复杂任务可能更长 |
+| **文件读取速度** | <1秒/文件 | >3秒/文件 | 大文件例外 |
+
+### 使用场景边界
+
+**适用场景** ✅：
+- 代码重构和优化
+- Bug修复和调试
+- 代码审查和改进
+- 文档生成
+- 测试编写
+- API集成
+
+**不适用场景** ❌：
+- 实时性要求高的任务（<5秒响应）
+- 大规模文件批量处理（>100文件）
+- 需要图形界面的操作
+- 系统级配置修改
+- 敏感数据处理（无审计）
+
+---
+
+## 📊 成功指标
+
+| 指标 | 目标 | 测量方法 |
+|------|------|---------|
+| **任务成功率** | >95% | exit_code=0的比例 |
+| **代码质量** | 无阻塞性问题 | 人工审查或CI检查 |
+| **响应速度** | <60秒 | 简单任务完成时间 |
+| **成本控制** | <$1.00/任务 | max-budget-usd监控 |
+
+---
+
+## 🔄 恢复策略总结
+
+| 异常类型 | 自动恢复 | 人工介入 | 预防措施 |
+|---------|---------|---------|---------|
+| 认证失败 | ❌ | ✅ 重登录 | 定期检查认证状态 |
+| 目录不存在 | ✅ 自动创建 | ❌ | 前置检查 |
+| 超时卡死 | ✅ 重启任务 | ❌ | 设置合理max-turns |
+| 权限拒绝 | ✅ 修改权限 | ❌ | 预先检查权限 |
+| 模型过载 | ✅ fallback模型 | ❌ | 使用Haiku备用 |
+| 上下文溢出 | ✅ /compact | ❌ | 监控上下文使用率 |
+| tmux冲突 | ✅ 杀旧会话 | ❌ | 用后清理 |
+| 预算超限 | ✅ 提高预算 | ❌ | 设置合理上限 |

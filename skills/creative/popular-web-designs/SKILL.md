@@ -1,6 +1,9 @@
 ---
 name: popular-web-designs
-description: 54 real design systems (Stripe, Linear, Vercel) as HTML/CSS.
+description: >
+  从真实网站提取的 54 个生产级设计系统。加载模板生成匹配 Stripe、Linear、Vercel、
+  Notion、Airbnb 等网站视觉识别的 HTML/CSS。每个模板包含颜色、排版、组件、
+  布局规则和即用型 CSS 值。
 version: 1.0.0
 author: Hermes Agent + Teknium (design systems sourced from VoltAgent/awesome-design-md)
 license: MIT
@@ -22,16 +25,6 @@ triggers:
 54 real-world design systems ready for use when generating HTML/CSS. Each template captures a
 site's complete visual language: color palette, typography hierarchy, component styles, spacing
 system, shadows, responsive behavior, and practical agent prompts with exact CSS values.
-
-## Related design skills
-
-- **`claude-design`** — use for the design *process and taste* (scoping a brief,
-  producing variants, verifying a local HTML artifact, avoiding AI-design slop).
-  Pair it with this skill when the user wants a thoughtfully-designed page styled
-  after a known brand: `claude-design` drives the workflow, this skill supplies
-  the visual vocabulary.
-- **`design-md`** — use when the deliverable is a formal DESIGN.md token spec
-  file, not a rendered artifact.
 
 ## How to Use
 
