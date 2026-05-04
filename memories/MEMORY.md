@@ -1,0 +1,1 @@
+用户 fork 的 Hermes Agent 仓库地址：https://github.com/54laowang/hermes-agent（注意仓库名是 hermes-agent 不是 hermes）

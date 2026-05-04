@@ -491,6 +491,7 @@ python3 scripts/backup-before-update.py --workflows
 - **环境变量配置丢失排查** - 配置丢失的诊断流程、恢复方案、预防措施（见 `references/env-config-loss-troubleshooting.md`）
 - **Gateway 配置丢失诊断** - 通过 SQLite 会话记录追溯配置丢失原因、预防措施、恢复流程（见 `references/gateway-config-loss-diagnosis.md`）
 - **环境变量备份系统** - 自动备份机制、恢复流程、最佳实践（见 `references/env-backup-system.md`）
+- **上游合并时 Skills 目录冲突处理** - 本地 skills 为独立仓库时如何合并上游（见 `references/upstream-merge-with-local-skills-conflict.md`）
 
 ## 支持脚本
 
