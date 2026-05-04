@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""
+缓存统计监控工具
+追踪和展示 DeepSeek API 缓存命中率
+
+Usage:
+    hermes-cache stats          # 显示统计报告
+    hermes-cache track <input> <cached>  # 记录请求
+    hermes-cache reset          # 重置统计
+    hermes-cache optimize       # 优化建议
+"""
+
+import sys
+import os
+import argparse
+import json
+from datetime import datetime
+
+# 添加 Hermes core 到路径
+sys.path.insert(0, os.path.expanduser("~/.hermes/core"))
+
+try:
+    from cache_aware_prompt import get_cache_aware_builder
+except ImportError:
+    print("❌ Error: cache_aware_prompt module not found")
+    sys.exit(1)
+
+
+def cmd_stats(args):
+    """显示统计报告"""
+    builder = get_cache_aware_builder()
+    print(builder.get_stats_report())
+
+
+def cmd_track(args):
+    """记录请求"""
+    builder = get_cache_aware_builder()
+    
+    try:
+        input_tokens = int(args.input)
+        cached_tokens = int(args.cached)
+    except ValueError:
+        print("❌ Error: input and cached must be integers")
+        return
+    
+    builder.track_request(input_tokens, cached_tokens, args.model)
+    
+    hit_rate = cached_tokens / input_tokens if input_tokens > 0 else 0
+    print(f"✅ Tracked: {cached_tokens}/{input_tokens} tokens ({hit_rate*100:.1f}% hit)")
+
+
+def cmd_reset(args):
+    """重置统计"""
+    stats_file = os.path.expanduser("~/.hermes/cache_stats.json")
+    
+    if os.path.exists(stats_file):
+        os.remove(stats_file)
+        print("🗑️  Cache stats reset")
+    else:
+        print("📭 No stats to reset")
+
+
+def cmd_optimize(args):
+    """优化建议"""
+    builder = get_cache_aware_builder()
+    stats = builder.stats
+    
+    print("🔍 缓存优化建议\n")
+    
+    if stats.total_requests == 0:
+        print("📊 暂无数据，请先使用一段时间后再分析\n")
+        return
+    
+    hit_rate = stats.avg_hit_rate
+    
+    if hit_rate < 0.5:
+        print("⚠️ 命中率偏低 (< 50%)\n")
+        print("建议：")
+        print("1. 检查固定前缀是否稳定")
+        print("   - system prompt 是否每次都变？")
+        print("   - 是否有动态时间戳在前缀中？")
+        print("")
+        print("2. 优化上下文顺序")
+        print("   - 最固定的内容放最前面")
+        print("   - 动态内容放最后")
+        print("")
+        print("3. 减少半固定内容更新频率")
+        print("   - 用户偏好每小时更新一次即可")
+        print("   - 关键事实不需要每次都重新加载")
+    
+    elif hit_rate < 0.8:
+        print("⚠️ 命中率中等 (50-80%)\n")
+        print("建议：")
+        print("1. 增加固定前缀的稳定性")
+        print("2. 批量处理相似任务")
+        print("3. 减少会话历史长度（保留最近 10 轮即可）")
+    
+    else:
+        print("✅ 命中率优秀 (> 80%)\n")
+        print("当前策略有效，继续保持！")
+        print("")
+        print(f"累计节省成本：${stats.total_cost_saved:.2f}")
+    
+    print("\n" + "="*50)
+    print(f"总请求数：{stats.total_requests}")
+    print(f"总输入 tokens：{stats.total_input_tokens:,}")
+    print(f"缓存命中 tokens：{stats.total_cached_tokens:,}")
+    print(f"平均命中率：{hit_rate*100:.1f}%")
+
+
+def cmd_test(args):
+    """测试缓存感知 Prompt 构建"""
+    builder = get_cache_aware_builder()
+    
+    # 构建测试 Prompt
+    messages = builder.build_prompt(
+        user_input=args.prompt or "测试缓存优化",
+        dynamic_context="当前时间：2026-05-04 19:45\n市场状态：收盘",
+        tools_context="可用工具：web_search, read_file, terminal"
+    )
+    
+    optimized, cache_meta = builder.optimize_for_deepseek(messages)
+    
+    print(f"\n📝 构建的 Prompt：")
+    print(f"Messages 数量：{len(optimized)}")
+    print(f"\n📊 缓存元数据：")
+    print(json.dumps(cache_meta, indent=2, ensure_ascii=False))
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Hermes 缓存统计监控工具",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="命令")
+    
+    # stats
+    parser_stats = subparsers.add_parser("stats", help="显示统计报告")
+    parser_stats.set_defaults(func=cmd_stats)
+    
+    # track
+    parser_track = subparsers.add_parser("track", help="记录请求")
+    parser_track.add_argument("input", help="输入 tokens")
+    parser_track.add_argument("cached", help="缓存 tokens")
+    parser_track.add_argument("--model", default="deepseek-v4-pro", help="模型名称")
+    parser_track.set_defaults(func=cmd_track)
+    
+    # reset
+    parser_reset = subparsers.add_parser("reset", help="重置统计")
+    parser_reset.set_defaults(func=cmd_reset)
+    
+    # optimize
+    parser_optimize = subparsers.add_parser("optimize", help="优化建议")
+    parser_optimize.set_defaults(func=cmd_optimize)
+    
+    # test
+    parser_test = subparsers.add_parser("test", help="测试构建")
+    parser_test.add_argument("--prompt", help="测试 Prompt")
+    parser_test.set_defaults(func=cmd_test)
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
