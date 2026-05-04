@@ -83,6 +83,49 @@
 【试错演进】─────────────→【时间线收敛】
 ```
 
+#### ✅ Holographic Memory（L4全息记忆）
+
+**引入时间**：2026年3月29日
+
+**核心文件**：
+- `plugins/memory/holographic/holographic.py` (6.5KB) — HRR算法
+- `plugins/memory/holographic/store.py` (20KB) — SQLite fact存储
+- `plugins/memory/holographic/retrieval.py` (21KB) — 检索引擎
+- `plugins/memory/holographic/__init__.py` (17KB) — Provider适配
+
+**核心技术**：
+
+| 技术 | 说明 |
+|------|------|
+| **HRR (Holographic Reduced Representations)** | 向量符号架构，支持bind/unbind/bundle操作 |
+| **Phase Encoding** | 确定性相位向量，跨平台可复现 |
+| **Trust Scoring** | 信任评分（0.0-1.0），helpful/unhelpful反馈训练 |
+| **Entity Resolution** | 实体识别与消歧（别名、引用） |
+| **FTS5 Full-Text Search** | SQLite全文索引，毫秒级检索 |
+
+**9大fact_store操作**：
+1. `add` — 添加事实（自动实体提取）
+2. `search` — 关键词搜索
+3. `probe` — 实体查询（所有相关事实）
+4. `related` — 结构关联查询
+5. `reason` — 组合推理（多实体交集）
+6. `contradict` — 矛盾检测
+7. `update` — 更新信任评分
+8. `remove` — 删除事实
+9. `list` — 列出所有事实
+
+**HRR操作原理**：
+```
+bind(a, b)   → a + b (mod 2π)     # 关联两个概念
+unbind(m, a) → m - a (mod 2π)     # 从记忆中检索值
+bundle(v1, v2, ...) → circular_mean  # 合并多个概念
+```
+
+**效果**：
+- ✅ 支持组合推理（如"Max的女儿的学校"）
+- ✅ 自动检测矛盾事实
+- ✅ 基于反馈的信任评分优化
+
 #### ✅ 完整自进化系统（6大模块）
 
 **核心文件**：
