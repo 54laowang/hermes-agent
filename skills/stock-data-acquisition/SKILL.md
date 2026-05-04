@@ -1,11 +1,38 @@
 ---
 name: stock-data-acquisition
-description: 股票数据获取完整框架 - 时间锚定 + 多数据源切换 + 智能缓存 + 自选股管理。整合美股SOP、A股交易日历、股价缓存、自选股监控四大核心能力，支持A股/美股/港股多市场，完整度100%。
-version: 2.0.0
+description: |
+  股票数据获取完整框架 - 时间锚定 + 多数据源切换 + 智能缓存 + 自选股管理。整合美股SOP、A股交易日历、股价缓存、自选股监控四大核心能力。
+  
+  Use when: 股票数据, stock data, 获取股价, A股数据, 美股数据, 港股数据, 交易日判断, 数据源切换, 自选股管理.
+  
+  Do NOT use for:
+  - 股票分析研判（用 stock-analysis-framework）
+  - 交易执行（用 grid-trading-system）
+  - 实时行情推送（用 stock-watcher）
+  - 财务报表分析（用财务分析 skills）
+version: 2.1.0
 tags: [finance, stock, data-acquisition, time-anchor, cache, watchlist, multi-source]
 author: Hermes (Darwin Evolution)
 created: 2026-05-02
 darwin_evolution: true
+keywords:
+  - 股票数据
+  - stock data
+  - 获取股价
+  - A股数据
+  - 美股数据
+  - 交易日判断
+  - 数据源切换
+  - 自选股管理
+triggers:
+  - 股票数据
+  - stock data
+  - 获取股价
+  - A股数据
+  - 美股数据
+  - 港股数据
+  - 交易日判断
+  - 数据源
 consolidated_from:
   - stock-price-cache (100%)
   - us-stock-data-acquisition-sop (50%)
@@ -1315,3 +1342,268 @@ def verify_done_when(task_type, code=None):
 **边界条件**: 20+ 项 ✅
 
 **达尔文进化**: 自然选择 ✓ 渐进优化 ✓ 功能特化 ✓ 生态平衡 ✓
+
+---
+
+## ⚠️ Known Gotchas
+
+### 时间锚定陷阱
+
+- **时区换算错误**: 北京时间 ≠ 美东时间
+  ```python
+  # ❌ 错误: 直接加减小时
+  us_time = beijing_time - 12  # 夏令时时会错
+  
+  # ✅ 正确: 使用 pytz 处理时区
+  from pytz import timezone
+  beijing = timezone('Asia/Shanghai')
+  us_eastern = timezone('US/Eastern')
+  us_time = beijing_time.astimezone(us_eastern)
+  ```
+
+- **交易日判断遗漏**: 未考虑调休
+  ```python
+  # ❌ 错误: 仅排除周末
+  if date.weekday() >= 5:
+      return False
+  
+  # ✅ 正确: 使用交易日历
+  # 包含法定节假日 + 调休工作日
+  import chinese_calendar
+  return chinese_calendar.is_workday(date)
+  ```
+
+- **美股盘前盘后**: 常规交易时间外
+  ```
+  # 美股交易时间（北京时间）
+  # 常规: 21:30 - 04:00 (夏令时)
+  #       22:30 - 05:00 (冬令时)
+  # 盘前: 16:00 - 21:30
+  # 盘后: 04:00 - 08:00
+  
+  # 检查是否在交易时间
+  # 不要在盘前盘后判断当日涨跌
+  ```
+
+### 数据源问题
+
+- **新浪接口限流**: 高频访问被封锁
+  ```python
+  # 新股/热门股票容易被限流
+  # 解决方案:
+  # 1. 添加延时: time.sleep(0.5)
+  # 2. 切换数据源: 东方财富/腾讯
+  # 3. 使用缓存: 5分钟内不重复请求
+  ```
+
+- **Tushare Token 过期**: 免费积分不足
+  ```bash
+  # 检查积分余额
+  curl -X POST 'http://api.tushare.pro' \
+    -d '{"api_name": "trade_cal", "token": "YOUR_TOKEN"}'
+  
+  # 积分规则:
+  # - 注册送 100 积分
+  # - 每日签到 +1 积分
+  # - 分享链接 +10 积分
+  ```
+
+- **Yahoo Finance 数据缺失**: 港股/A股不全
+  ```python
+  # Yahoo Finance 支持:
+  # ✅ 美股: AAPL, MSFT
+  # ⚠️ 港股: 0700.HK (部分缺失)
+  # ❌ A股: 不支持
+  
+  # A股必须使用 Tushare/东方财富
+  ```
+
+- **数据延迟**: 免费接口 vs 付费接口
+  ```
+  # 数据延迟对比:
+  # - 新浪财经: 15秒延迟
+  # - 东方财富: 3秒延迟
+  # - Tushare: 日线数据（T+1）
+  # - 付费接口: 实时（毫秒级）
+  
+  # 交易决策前检查数据新鲜度
+  ```
+
+### 缓存管理陷阱
+
+- **缓存过期判断错误**: 使用绝对时间
+  ```python
+  # ❌ 错误: 固定过期时间
+  cache_time = datetime(2024, 1, 1, 15, 0)
+  
+  # ✅ 正确: 相对时间 + 交易日判断
+  if is_trading_time():
+      expiry = 5 * 60  # 交易时间 5 分钟
+  else:
+      expiry = 24 * 3600  # 非交易时间 24 小时
+  ```
+
+- **缓存穿透**: 无效股票代码
+  ```python
+  # 检查股票代码有效性
+  if not re.match(r'^(000|600|601|603|300|688)\d{3}$', code):
+      return None  # 直接返回，不缓存
+  
+  # 避免缓存大量无效查询
+  ```
+
+- **缓存雪崩**: 大量缓存同时过期
+  ```python
+  # 添加随机过期时间
+  import random
+  expiry = base_expiry + random.randint(0, 60)
+  ```
+
+### 自选股管理问题
+
+- **自选股列表过长**: 超过 API 限制
+  ```python
+  # Tushare 单次请求上限: 100 只
+  # 东方财富单次请求上限: 500 只
+  
+  # 分批获取
+  for chunk in chunks(watchlist, 100):
+      get_stock_data(chunk)
+  ```
+
+- **自选股重复**: 手动添加重复
+  ```python
+  # 添加前检查
+  if stock_code in watchlist:
+      print(f"{stock_code} 已在自选股中")
+      return
+  
+  # 定期去重
+  watchlist = list(set(watchlist))
+  ```
+
+- **自选股数据同步**: 多设备不一致
+  ```python
+  # 使用云端存储同步
+  # 1. 本地: ~/.hermes/watchlist.json
+  # 2. 云端: 数据库/对象存储
+  
+  # 启动时拉取最新
+  # 退出时推送变更
+  ```
+
+### 多数据源切换问题
+
+- **数据格式不一致**: 各源字段名不同
+  ```python
+  # 新浪财经
+  {'code': '000001', 'price': 12.5, 'change': 0.5}
+  
+  # 东方财富
+  {'股票代码': '000001', '最新价': 12.5, '涨跌额': 0.5}
+  
+  # Tushare
+  {'ts_code': '000001.SZ', 'close': 12.5, 'pct_chg': 4.0}
+  
+  # 统一格式化函数
+  def normalize_data(source, raw_data):
+      if source == 'sina':
+          return {...}
+      elif source == 'eastmoney':
+          return {...}
+  ```
+
+- **数据源优先级错误**: 延迟高的源优先
+  ```python
+  # ❌ 错误优先级
+  sources = ['tushare', 'sina', 'eastmoney']
+  
+  # ✅ 正确优先级（实时性优先）
+  sources = ['sina', 'eastmoney', 'tushare']
+  # 实时数据优先，历史数据补充
+  ```
+
+- **降级策略缺失**: 所有数据源都失败
+  ```python
+  # 必须有兜底方案
+  try:
+      data = try_all_sources()
+  except AllSourcesFailed:
+      # 1. 返回缓存数据（标记过期）
+      # 2. 发送告警通知
+      # 3. 记录失败日志
+      return get_cached_data(mark_expired=True)
+  ```
+
+### API 限流和配额
+
+- **Tushare 积分不足**: 高频接口耗尽
+  ```python
+  # 接口积分消耗:
+  # - daily: 1 积分/次
+  # - daily_basic: 5 积分/次
+  # - income: 10 积分/次
+  
+  # 批量查询节省积分
+  df = pro.daily(ts_code='000001.SZ,600000.SH,...')
+  ```
+
+- **东方财富 Cookie 过期**: 需要重新获取
+  ```python
+  # Cookie 有效期约 2 小时
+  # 自动刷新机制
+  def get_eastmoney_data():
+      if cookie_expired():
+          refresh_cookie()
+      ...
+  ```
+
+- **并发请求限制**: 同时请求数过多
+  ```python
+  # 使用连接池 + 限流
+  from requests.adapters import HTTPAdapter
+  from urllib3.util.retry import Retry
+  
+  session = requests.Session()
+  adapter = HTTPAdapter(
+      pool_connections=10,
+      pool_maxsize=10,
+      max_retries=Retry(total=3, backoff_factor=0.5)
+  )
+  session.mount('http://', adapter)
+  ```
+
+### 数据质量问题
+
+- **停牌股票数据**: 价格为 0 或 NULL
+  ```python
+  # 检查停牌状态
+  if data['volume'] == 0:
+      print(f"{code} 今日停牌")
+      return get_last_trading_day_data(code)
+  ```
+
+- **ST 股票涨跌幅**: 5% 限制
+  ```python
+  # 普通股票: ±10%
+  # ST股票: ±5%
+  # 创业板/科创板: ±20%
+  
+  # 根据股票类型调整涨跌幅限制
+  if code.startswith('ST'):
+      limit = 0.05
+  elif code.startswith('300') or code.startswith('688'):
+      limit = 0.20
+  else:
+      limit = 0.10
+  ```
+
+- **新股数据缺失**: 上市时间短
+  ```python
+  # 新股上市前 5 天无涨跌幅限制
+  # 数据可能异常
+  
+  listing_days = (today - listing_date).days
+  if listing_days < 5:
+      print(f"{code} 为新股，数据可能异常")
+  ```

@@ -9,3 +9,5 @@ self-improving 概念首次提出：2026-03-06（commit 2dbbedc05），从 "grow
 Hook 冲突已解决：创建了 unified_time_awareness.py 统一模块，合并了 supervisor-precheck 和 time-sense-injector 的时间感知逻辑。财经任务注入完整时间锚定 (~800 tokens)，非财经任务仅注入基础时间 (~200 tokens)，节省 60%+ tokens。其他冲突修复：删除重复 CLAUDE.md、添加 *.db 到 .gitignore、忽略 skills/.archive/ 目录。
 §
 学习了 14 个 Claude Skill 编写模式（Bilgin Ibryam 系列）。核心洞见：1) 触发是生死关口 - description 必须包含触发词和排除条款；2) 约束太死是普遍错误 - 用 Explain-the-Why 替代 MUST/NEVER；3) Gotchas 价值最高 - 只能从真实失败案例提取；4) 渐进式披露省 Token - SKILL.md < 500 行；5) 模板+示例组合 - 骨架+肉。当前 Hermes Skills 现状：503 个，97% 缺排除条款，99.4% 缺 Gotchas。
+§
+Skill 批量优化方法论已完善：5步骤流程（分析→优先级→优化→版本→提交）+ 优先级矩阵（P0基础设施/P1核心/P2辅助）+ Gotchas写作规范（真实失败+对比示例+分类+最低10条）+ 实战案例（Top 5 核心 Skills, 85+ Gotchas）

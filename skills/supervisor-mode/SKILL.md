@@ -1,10 +1,33 @@
 ---
 name: supervisor-mode
-description: 监察者模式 - 主 Agent 不干活，只监控 subagent 执行过程，通过干预文件实时纠偏。适用于复杂多步骤任务、高风险操作、需要质量把关的场景。
-version: 1.2.0
+description: |
+  监察者模式 - 主 Agent 不干活，只监控 subagent 执行过程，通过干预文件实时纠偏。适用于复杂多步骤任务、高风险操作、需要质量把关的场景。
+  
+  Use when: 监察者, supervisor, 监控agent, 纠偏, 质量把关, subagent监控, 任务监督.
+  
+  Do NOT use for:
+  - 直接执行任务（用其他执行类 skills）
+  - 简单单步任务（无需监控）
+  - 低风险操作（测试环境、本地实验）
+  - 实时交互任务（需要用户反馈的任务）
+version: 1.3.0
 category: agent-optimization
 author: Hermes + GenericAgent
 tags: [monitoring, subagent, quality-control, intervention]
+keywords:
+  - 监察者
+  - supervisor
+  - 监控agent
+  - 纠偏
+  - 质量把关
+  - subagent监控
+triggers:
+  - 监察者模式
+  - supervisor mode
+  - 监控agent
+  - 纠偏
+  - 质量把关
+  - 任务监督
 ---
 
 # 监察者模式 (Supervisor Mode)
@@ -932,3 +955,310 @@ def log_supervisor_action(task_id, action_type, details):
 - **配置示例**: `~/.hermes/config/supervisor_config.yaml` (2.6KB)
 - **测试套件**: `~/.hermes/scripts/test_supervisor_integration.py` (7.4KB)
 - **使用指南**: `~/.hermes/docs/SUPERVISOR-INTEGRATION-GUIDE.md` (8.2KB)
+
+---
+
+## ⚠️ Known Gotchas
+
+### 三大红线违反
+
+- **违规下场干活**: 主 Agent 直接操作
+  ```python
+  # ❌ 错误: 主 Agent 执行任务
+  terminal("npm install package")
+  write_file("config.yaml", content)
+  
+  # ✅ 正确: 只监控，不干活
+  # 主 Agent 只能:
+  # 1. 读取环境: file_read, terminal(只读命令)
+  # 2. 检查约束: 验证 SOP 遵循度
+  # 3. 写干预文件: 纠偏指令
+  ```
+
+- **未获取情报就干预**: 盲目纠偏
+  ```python
+  # ❌ 错误: 不了解情况就干预
+  write_intervention("stop", reason="感觉不对")
+  
+  # ✅ 正确: 先读取再判断
+  log = file_read("~/.hermes/logs/agent.log")
+  if "error" in log:
+      write_intervention("pause", reason=f"发现错误: {error}")
+  ```
+
+- **过度干预**: 频繁打断 Subagent
+  ```python
+  # ❌ 错误: 每 5 秒干预一次
+  while True:
+      sleep(5)
+      write_intervention("check")
+  
+  # ✅ 正确: 只在关键节点干预
+  # 干预时机:
+  # 1. SOP 检查点失败
+  # 2. 约束违规
+  # 3. 错误累积超过阈值
+  ```
+
+### 干预文件问题
+
+- **干预文件格式错误**: Subagent 无法解析
+  ```yaml
+  # ❌ 错误: 格式不规范
+  action: stop
+  reason: 觉得不对
+  
+  # ✅ 正确: 规范格式
+  timestamp: "2024-01-01 12:00:00"
+  action: pause
+  reason: "数据源切换未按 SOP"
+  checkpoint: "step_3_data_fetch"
+  correction: "使用财联社 P0 数据源"
+  ```
+
+- **干预文件路径错误**: Subagent 读不到
+  ```python
+  # ❌ 错误: 路径不正确
+  path = "~/.hermes/intervention.txt"
+  
+  # ✅ 正确: 使用标准路径
+  path = "~/.hermes/runs/{run_id}/intervention.yaml"
+  # Subagent 会监听此路径
+  ```
+
+- **干预文件冲突**: 多个 Supervisor 同时写
+  ```python
+  # 使用文件锁避免冲突
+  import fcntl
+  with open(intervention_file, 'w') as f:
+      fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+      yaml.dump(intervention, f)
+      fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+  ```
+
+### Subagent 失败恢复
+
+- **超时未处理**: Subagent 卡住
+  ```python
+  # ❌ 错误: 无超时机制
+  subagent.run()
+  
+  # ✅ 正确: 设置超时
+  import signal
+  
+  def timeout_handler(signum, frame):
+      write_intervention("terminate", reason="超时")
+      raise TimeoutError("Subagent 超时")
+  
+  signal.signal(signal.SIGALRM, timeout_handler)
+  signal.alarm(300)  # 5 分钟超时
+  try:
+      subagent.run()
+  finally:
+      signal.alarm(0)
+  ```
+
+- **崩溃无恢复**: Subagent 异常退出
+  ```python
+  # ✅ 正确: 异常捕获 + 恢复
+  try:
+      subagent.run()
+  except Exception as e:
+      log_error(e)
+      
+      # 恢复策略
+      if recoverable(e):
+          # 1. 从检查点恢复
+          checkpoint = get_last_checkpoint()
+          subagent.resume(checkpoint)
+      else:
+          # 2. 通知用户
+          notify_user(f"任务失败: {e}")
+  ```
+
+- **资源泄漏**: 进程/文件未清理
+  ```python
+  # ✅ 正确: 资源清理
+  import atexit
+  import os
+  
+  def cleanup():
+      if os.path.exists(temp_dir):
+          shutil.rmtree(temp_dir)
+      if subagent_process.is_alive():
+          subagent_process.terminate()
+  
+  atexit.register(cleanup)
+  ```
+
+### 环境预检陷阱
+
+- **依赖未检查**: 运行时才发现缺失
+  ```python
+  # ❌ 错误: 直接启动
+  subagent.run()
+  
+  # ✅ 正确: 先检查环境
+  def check_environment():
+      checks = [
+          ("python3", "Python 3.10+"),
+          ("node", "Node.js 16+"),
+          ("docker", "Docker"),
+      ]
+      for cmd, desc in checks:
+          if not shutil.which(cmd):
+              return False, f"缺少 {desc}"
+      return True, "环境检查通过"
+  
+  ok, msg = check_environment()
+  if not ok:
+      raise EnvironmentError(msg)
+  ```
+
+- **权限不足**: Subagent 无法执行关键操作
+  ```bash
+  # 检查必要权限
+  # 1. 文件读写权限
+  test -w ~/.hermes/runs
+  
+  # 2. 网络权限
+  curl -I https://api.openai.com
+  
+  # 3. 进程权限
+  ps aux | grep agent
+  ```
+
+### SOP 遵循检查
+
+- **SOP 过时**: 文档与实际不符
+  ```python
+  # 检查 SOP 版本
+  sop_version = get_sop_version("stock_analysis")
+  if sop_version < "2.0":
+      print(f"警告: SOP 版本过旧 ({sop_version})")
+  ```
+
+- **检查点遗漏**: 跳过关键步骤
+  ```python
+  # ❌ 错误: 未检查关键步骤
+  if step > 3:
+      pass  # 假设前面都做对了
+  
+  # ✅ 正确: 逐一验证检查点
+  checkpoints = [
+      "step_1_time_anchor",
+      "step_2_market_status",
+      "step_3_data_fetch",
+  ]
+  for cp in checkpoints:
+      if not verify_checkpoint(cp):
+          write_intervention("pause", reason=f"{cp} 未完成")
+  ```
+
+- **约束违规**: Subagent 违反规则
+  ```python
+  # 常见约束违规:
+  # 1. 使用了禁止的数据源
+  # 2. 跳过了必需的验证步骤
+  # 3. 输出格式不符合规范
+  
+  # 约束检查函数
+  def check_constraints():
+      violations = []
+      if uses_banned_source():
+          violations.append("使用禁止数据源")
+      if skips_validation():
+          violations.append("跳过验证步骤")
+      return violations
+  ```
+
+### 性能问题
+
+- **监控频率过高**: 消耗大量资源
+  ```python
+  # ❌ 错误: 高频轮询
+  while True:
+      check_subagent()  # 每次都读取日志
+  
+  # ✅ 正确: 合理轮询间隔
+  POLL_INTERVAL = 5  # 5 秒
+  while True:
+      check_subagent()
+      time.sleep(POLL_INTERVAL)
+  ```
+
+- **日志过大**: 占满磁盘
+  ```python
+  # 日志轮转
+  import logging
+  from logging.handlers import RotatingFileHandler
+  
+  handler = RotatingFileHandler(
+      "supervisor.log",
+      maxBytes=10*1024*1024,  # 10MB
+      backupCount=5
+  )
+  ```
+
+- **内存泄漏**: Subagent 占用内存不释放
+  ```python
+  # 监控内存使用
+  import psutil
+  
+  def check_memory():
+      process = psutil.Process(subagent_pid)
+      mem = process.memory_info().rss / 1024 / 1024  # MB
+      if mem > 1024:  # 1GB
+          write_intervention("restart", reason="内存泄漏")
+  ```
+
+### 多 Subagent 协调
+
+- **Subagent 间冲突**: 资源竞争
+  ```python
+  # 使用锁协调
+  import threading
+  
+  resource_lock = threading.Lock()
+  
+  def coordinate_subagents():
+      with resource_lock:
+          # 同一时间只有一个 Subagent 操作
+          subagent.run()
+  ```
+
+- **依赖顺序错误**: 后置任务先执行
+  ```python
+  # ✅ 正确: 明确依赖关系
+  tasks = [
+      {"id": "fetch", "deps": []},
+      {"id": "process", "deps": ["fetch"]},
+      {"id": "report", "deps": ["process"]},
+  ]
+  
+  # 拓扑排序后执行
+  for task in topological_sort(tasks):
+      run_subagent(task)
+  ```
+
+### 与 Hook 系统冲突
+
+- **重复注入时间**: unified_time_awareness 已处理
+  ```yaml
+  # hooks.yaml 优先级配置
+  hooks:
+    pre_llm_call:
+      - name: unified_time_awareness
+        priority: 10  # 最高优先级
+      - name: supervisor_precheck
+        priority: 20  # 次高优先级
+  ```
+
+- **Hook 覆盖**: 监察者模式被其他 Hook 禁用
+  ```bash
+  # 检查 Hook 状态
+  hermes hooks list
+  
+  # 确保未被禁用
+  hermes hooks enable supervisor_precheck
+  ```

@@ -4,6 +4,14 @@ description: |
   全局约束管理系统 - 时间感知、情境感知、对话状态感知的统一约束层。
   在所有任务执行前自动注入约束条件，确保 AI 的行为符合人类期望。
   
+  Use when: 全局约束, constraints, 时间感知, time awareness, 情境感知, context awareness, 执行规范, Hook注入.
+  
+  Do NOT use for:
+  - 具体任务执行（用其他执行类 skills）
+  - 数据获取（用 stock-data-acquisition）
+  - 股票分析（用 stock-analysis-framework）
+  - 错误恢复（用 supervisor-mode）
+  
   触发场景：
   - 所有任务执行前的自动检查（通过 Shell Hook 注入）
   - 用户主动询问约束规则
@@ -14,11 +22,28 @@ description: |
   2. 情境感知约束：用户状态识别与响应策略
   3. 对话状态约束：跨会话连贯性与话题衔接
   4. 执行规范约束：Skill 执行合规性检查
-version: 1.0.0
+version: 1.1.0
 author: Hermes Agent
 category: core
 tags: [constraints, time-awareness, context-awareness, execution-governance]
 created: 2026-05-02
+keywords:
+  - 全局约束
+  - constraints
+  - 时间感知
+  - time awareness
+  - 情境感知
+  - context awareness
+  - 执行规范
+triggers:
+  - 全局约束
+  - constraints
+  - 时间感知
+  - time awareness
+  - 情境感知
+  - context awareness
+  - 执行规范
+  - Hook注入
 ---
 
 # 全局约束管理系统
@@ -773,3 +798,289 @@ if __name__ == "__main__":
 - **数据交叉验证原则**：`~/.hermes/CLAUDE.md` 中相关章节
 - **用户画像**：memory 中的 user profile
 - **约束配置**：`~/.hermes/constraints.yaml`（待创建）
+
+---
+
+## ⚠️ Known Gotchas
+
+### 时间锚定陷阱
+
+- **时区未统一**: 不同组件使用不同时区
+  ```python
+  # ❌ 错误: 混用时区
+  now_beijing = datetime.now()  # 本地时间
+  now_utc = datetime.utcnow()   # UTC 时间
+  # 两者差 8 小时（冬令时）或 7 小时（夏令时）
+  
+  # ✅ 正确: 统一使用北京时间
+  from pytz import timezone
+  beijing = timezone('Asia/Shanghai')
+  now = datetime.now(beijing)
+  ```
+
+- **时间锚点缺失**: 财经任务未注入时间
+  ```yaml
+  # hooks.yaml 配置
+  hooks:
+    pre_llm_call:
+      - name: unified_time_awareness
+        priority: 10  # 确保最高优先级
+        config:
+          enable_time_anchor: true  # 开启时间锚定
+  ```
+
+- **市场状态判断错误**: 非交易时间当作交易时间
+  ```python
+  # 检查市场状态
+  # 北京时间 9:30-11:30, 13:00-15:00
+  # 美东时间 9:30-16:00
+  
+  # ❌ 错误: 仅检查小时
+  if 9 <= hour < 15:
+      is_trading = True
+  
+  # ✅ 正确: 完整判断
+  if (9 <= hour < 11 and minute >= 30) or (13 <= hour < 15):
+      is_trading = True
+  ```
+
+### Hook 注入问题
+
+- **Hook 重复注入**: 多个 Hook 注入相同内容
+  ```yaml
+  # 已在 unified_time_awareness.py 中统一处理
+  # 不要再单独注入:
+  # ❌ supervisor-precheck (已废弃)
+  # ❌ time-sense-injector (已废弃)
+  
+  # ✅ 正确: 只使用统一模块
+  hooks:
+    pre_llm_call:
+      - name: unified_time_awareness
+        priority: 10
+  ```
+
+- **Hook 优先级错误**: 注入顺序不当
+  ```yaml
+  # ❌ 错误优先级
+  hooks:
+    pre_llm_call:
+      - name: time_anchor  # 应该最高
+        priority: 50
+      - name: context_check
+        priority: 10  # 应该次高
+  
+  # ✅ 正确优先级
+  hooks:
+    pre_llm_call:
+      - name: unified_time_awareness  # 时间锚定最高
+        priority: 10
+      - name: context_check  # 情境检查次高
+        priority: 20
+  ```
+
+- **Hook 未生效**: 配置未加载
+  ```bash
+  # 检查 Hook 状态
+  hermes hooks list
+  
+  # 重新加载配置
+  hermes hooks reload
+  
+  # 测试 Hook 是否生效
+  hermes chat -q "现在几点" | grep "北京时间"
+  ```
+
+### 约束冲突
+
+- **优先级冲突**: 时间锚定 vs 时间感知
+  ```python
+  # 场景: 深夜用户询问股价
+  
+  # ❌ 错误: 时间感知优先（不打扰用户）
+  # 结果: 使用过时数据，分析无效
+  
+  # ✅ 正确: 时间锚定优先
+  # 1. 获取精确时间
+  # 2. 判断市场状态（已收盘）
+  # 3. 提醒用户数据为收盘价
+  # 4. 次日开盘后是否重新分析
+  ```
+
+- **情境感知误判**: 用户状态识别错误
+  ```python
+  # ❌ 错误: 周末推断用户在休息
+  if is_weekend():
+      response_tone = "温馨关怀"
+  
+  # ✅ 正确: 检查用户实际状态
+  if is_weekend() and not user_is_active():
+      response_tone = "温馨关怀"
+  else:
+      response_tone = "正常专业"  # 用户可能在加班
+  ```
+
+- **约束过严**: 阻止合理操作
+  ```python
+  # ❌ 错误: 深夜禁止所有操作
+  if hour >= 23:
+      raise ConstraintViolation("深夜不工作")
+  
+  # ✅ 正确: 区分任务类型
+  if hour >= 23:
+      if task_type == "urgent":
+          allow_with_warning("深夜执行紧急任务")
+      else:
+          suggest_defer("建议明天执行")
+  ```
+
+### 对话状态问题
+
+- **会话丢失**: Memory 数据损坏
+  ```bash
+  # 备份 Memory
+  cp ~/.hermes/memory_store.db ~/.hermes/memory_store.db.backup
+  
+  # 检查数据完整性
+  sqlite3 ~/.hermes/memory_store.db "PRAGMA integrity_check"
+  
+  # 重建 Memory
+  hermes memory rebuild
+  ```
+
+- **话题跳跃**: 用户频繁切换话题
+  ```python
+  # 维护话题栈
+  topic_stack = []
+  
+  def handle_topic_change(new_topic):
+      if topic_stack:
+          old_topic = topic_stack[-1]
+          confirm = f"切换话题？当前: {old_topic}"
+      topic_stack.append(new_topic)
+  ```
+
+- **上下文溢出**: Token 超限
+  ```python
+  # 监控 Token 使用
+  if token_count > max_tokens * 0.8:
+      # 自动压缩历史对话
+      compress_history()
+      # 或提醒用户
+      warn("上下文过长，建议开始新会话")
+  ```
+
+### 执行规范问题
+
+- **Skill 选择错误**: 触发了错误的 Skill
+  ```python
+  # 检查 Skill 排除条款
+  # 在 description 中添加:
+  # Do NOT use for: [相关但不属于的任务]
+  
+  # 用户输入: "分析股票"
+  # ❌ 错误触发: stock-data-acquisition
+  # ✅ 正确触发: stock-analysis-framework
+  ```
+
+- **SOP 遵循失败**: 跳过关键步骤
+  ```python
+  # 强制检查点验证
+  required_steps = [
+      "time_anchor",
+      "market_status_check",
+      "data_fetch",
+      "analysis",
+      "report",
+  ]
+  
+  for step in required_steps:
+      if not check_step_completed(step):
+          raise SOPViolation(f"未完成: {step}")
+  ```
+
+- **权限不足**: Skill 无法执行关键操作
+  ```bash
+  # 检查 Skill 权限
+  hermes skills list --verbose
+  
+  # 启用必要工具
+  hermes config set tools.enable terminal,file,web
+  ```
+
+### 性能问题
+
+- **Hook 执行慢**: 注入逻辑耗时过长
+  ```python
+  # ❌ 错误: Hook 中执行网络请求
+  def hook_pre_llm_call():
+      data = fetch_from_api()  # 可能超时
+      return inject(data)
+  
+  # ✅ 正确: 使用缓存
+  def hook_pre_llm_call():
+      data = cache.get("time_data")
+      if not data:
+          data = fetch_from_api()
+          cache.set("time_data", data, ttl=60)
+      return inject(data)
+  ```
+
+- **约束检查过多**: 每次请求都全量检查
+  ```python
+  # 分层检查，快速失败
+  def check_constraints():
+      # L0: 时间锚定（必须）
+      if not check_time_anchor():
+          return False
+      
+      # L1: 时间感知（快速）
+      if not check_time_awareness():
+          return handle_gently()
+      
+      # L2-L4: 按需检查
+      # ...
+  ```
+
+- **Memory 查询慢**: 大量历史数据
+  ```python
+  # 使用索引优化查询
+  CREATE INDEX idx_memory_timestamp ON memory(timestamp);
+  
+  # 限制查询范围
+  SELECT * FROM memory 
+  WHERE timestamp > datetime('now', '-7 days')
+  LIMIT 100;
+  ```
+
+### 配置管理
+
+- **配置文件缺失**: constraints.yaml 不存在
+  ```bash
+  # 创建默认配置
+  hermes constraints init
+  
+  # 或手动创建
+  cat > ~/.hermes/constraints.yaml << EOF
+  time_awareness:
+    enabled: true
+    quiet_hours: [23, 6]  # 23:00-06:00
+  context_awareness:
+    enabled: true
+  EOF
+  ```
+
+- **配置格式错误**: YAML 语法错误
+  ```bash
+  # 验证 YAML 格式
+  python3 -c "import yaml; yaml.safe_load(open('~/.hermes/constraints.yaml'))"
+  ```
+
+- **配置未生效**: 修改后未重新加载
+  ```bash
+  # 重新加载配置
+  hermes config reload
+  
+  # 或重启 Hermes
+  hermes restart
+  ```

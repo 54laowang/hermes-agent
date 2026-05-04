@@ -239,6 +239,166 @@ auto_load: false
 2. **流程变化**：更新标准流程步骤
 3. **工具升级**：更新工具使用方式
 
+---
+
+## 批量优化流程
+
+### 触发条件
+
+- Skills 数量 > 100，需要系统性质量提升
+- 发现大量 Skills 缺少排除条款或 Known Gotchas
+- 用户要求优化特定领域或类别的 Skills
+
+### 标准优化流程
+
+#### 步骤 1: 分析现状
+
+```bash
+# 统计总数
+find skills -name 'SKILL.md' -type f | wc -l
+
+# 查找大文件（>400行，优先优化）
+find skills -name 'SKILL.md' -type f -exec wc -l {} \; | awk '$1 > 400 {print $1, $2}' | sort -rn
+
+# 查找缺少排除条款的 Skills
+grep -L 'Do NOT use' skills/*/SKILL.md skills/*/*/SKILL.md
+
+# 查找缺少 Known Gotchas 的 Skills
+grep -L 'Known Gotchas' skills/*/SKILL.md skills/*/*/SKILL.md
+
+# 按类别统计
+find skills -name 'SKILL.md' -type f -exec dirname {} \; | sed 's|skills/||' | cut -d'/' -f1 | sort | uniq -c | sort -rn
+```
+
+#### 步骤 2: 确定优化优先级
+
+**优先级矩阵**：
+
+| 优先级 | 标准 | 示例 |
+|--------|------|------|
+| **P0** | 基础设施 + 大文件 + 高频依赖 | `stock-data-acquisition`, `hermes-agent` |
+| **P1** | 核心功能 + 中等文件 | `supervisor-mode`, `global-constraints` |
+| **P2** | 辅助功能 + 小文件 | `huashu-design`, `grid-trading-system` |
+
+**决策规则**：
+1. 先优化被其他 Skills 依赖的（基础设施）
+2. 再优化高频使用的（实际使用统计）
+3. 最后优化大文件（复杂度高，收益大）
+
+#### 步骤 3: 单个 Skill 优化内容
+
+**必须添加**：
+
+1. **排除条款**（Do NOT use for）：
+   ```yaml
+   description: |
+     核心功能描述。
+     
+     Use when: 触发词1, 触发词2, 触发词3.
+     
+     Do NOT use for:
+     - 不适用场景1（原因）
+     - 不适用场景2（替代方案）
+   ```
+
+2. **Known Gotchas**（实际失败案例）：
+   ```markdown
+   ## ⚠️ Known Gotchas
+   
+   ### 类别名称
+   
+   - **问题标题**: 简短描述
+     ```python
+     # 错误示例
+     ❌ 错误代码
+     
+     # 正确示例
+     ✅ 正确代码
+     ```
+   ```
+
+3. **触发词**（keywords + triggers）：
+   ```yaml
+   keywords:
+     - 关键词1
+     - 关键词2
+   triggers:
+     - 触发词1
+     - 触发词2
+   ```
+
+**Gotchas 编写原则**：
+- 只记录**实际失败过**的案例（不是想象的问题）
+- 必须包含**错误示例 + 正确示例**
+- 按类别分组（数据源、配置、工具、边界条件等）
+- 每个 Skill 至少 10 条 Gotchas
+
+#### 步骤 4: 版本号升级规则
+
+```
+MAJOR.MINOR.PATCH
+
+- MAJOR: 架构重构、功能大改
+- MINOR: 新增排除条款、Gotchas、触发词
+- PATCH: 小修复、文档更新
+```
+
+**示例**：
+- `v2.0.0` → `v2.1.0`（新增 Gotchas）
+- `v2.1.0` → `v2.1.1`（修复拼写错误）
+
+#### 步骤 5: 批量提交
+
+```bash
+# 统计优化成果
+git add -A
+git commit -m "feat: 完成 Top N 核心 Skills 优化
+
+✅ 已完成 N/M：
+
+1. skill-name-1 (v1.0.0 → 1.1.0)
+   - 排除条款：...
+   - Known Gotchas：X条
+
+...
+
+优化成果：
+- ✅ N 个核心 Skills 全部添加排除条款
+- ✅ N 个核心 Skills 全部添加 Known Gotchas
+- ✅ 总计 X+ 条 Known Gotchas
+
+预期收益：
+- 触发准确率提升 30%+
+- 失败预防提升 40%+
+- Token 节省 ~10K/会话"
+```
+
+### 实战案例：Top 5 核心 Skills 优化
+
+**背景**：
+- Skills 总数：502 个
+- 缺少排除条款：97%
+- 缺少 Known Gotchas：99.4%
+
+**优化目标**：Top 5 高频核心 Skills
+
+**优化结果**：
+
+| Skill | 版本升级 | 排除条款 | Known Gotchas |
+|-------|---------|---------|---------------|
+| `github-repo-management` | 1.1.0 → 1.2.0 | ✅ | 14 条 |
+| `humanizer` | 2.5.1 → 2.5.2 | ✅ | 15 条 |
+| `grid-trading-monitor` | 1.0.0 → 1.1.0 | ✅ | 16 条 |
+| `stock-analysis-framework` | 2.0.0 → 2.1.0 | ✅ | 20+ 条 |
+| `hermes-agent` | 2.1.0 → 2.2.0 | ✅ | 20+ 条 |
+
+**总计**：85+ Known Gotchas，Git 已推送
+
+**经验教训**：
+- 优先优化**基础设施 Skills**（被其他 Skills 依赖）
+- Gotchas 必须来自**实际失败案例**，不能凭空想象
+- 版本号升级遵循语义化版本规范
+
 ### 更新命令
 
 ```bash
@@ -279,6 +439,7 @@ skill_manage(action="write_file", name="skill-name", file_path="references/topic
 - `time-anchor-constitution` - 时间锚定宪法（P0）
 - `hierarchical-memory-system` - 分层记忆系统
 - `skill-authoring-quality` - Skill 创作质量标准（Done When + 上下文发现）
+- **`references/known-gotchas-best-practices.md`** - Known Gotchas 编写最佳实践（必读）
 
 ---
 

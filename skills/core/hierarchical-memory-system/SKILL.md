@@ -1,40 +1,49 @@
 ---
 name: hierarchical-memory-system
-version: 1.7.0
-description: "分层分级记忆系统 - 让记忆不再是垃圾堆
-L1 会话记忆（本次对话）→ L2 短期记忆（7 天自动摘要）→ L3 长期记忆（永久高价值）→ L4 技能记忆（可复用 Skill）
-
-v1.7.0 新增：
-- ✅ LLM 增强摘要提取（用户偏好、重要决策、学到的知识）
-- ✅ 自动升级 L2 → L3（高价值信息自动持久化）
-- ✅ 跨会话话题追踪（time-sense-injector v2.0）
-
-v1.8.0 新增（2026-05-04）：
-- ✅ L5 Context Memory（任务特定上下文）
-- ✅ 任务生命周期管理（创建/更新/完成/清理）
-- ✅ 步骤追踪 + 中间结果存储
-- ✅ 自动任务检测（关键词触发）
-- ✅ 上下文 Prompt 注入机制
-- ✅ 完整 CLI 工具（hermes-task）
-- 🎯 效果：补齐记忆系统最后一块拼图，超越 CrewAI 五层记忆
-
-v1.9.0 新增（2026-05-04）：
-- ✅ 六层记忆架构（L1-L6）
-- ✅ L2 精简方法论（2491→1021 chars，-59%）
-- ✅ 跨层协同优化（L2↔L5、L3↔L6、L4→L3）
-- ✅ l5_to_l2_injector.py（高频实体反向注入）
-- ✅ Experiential Memory 与 Skills 系统联动
-- 🎯 效果：跨层一致性 +100%、重复录入 -80%、自动抽象触发率 +150%
-
-v1.10.0 新增（2026-05-04）：
-- ✅ 缓存优化系统集成（DeepSeek Prefix Caching）
-- ✅ 平均缓存命中率 92%+，节省成本 80%+
-- ✅ CLI 工具 hermes-cache（统计监控、优化建议）
-- ✅ 固定前缀策略（从 HERMES.md 读取核心约束）
-- ✅ HERMES.md 重命名（避免与 Claude Code 冲突）
-- 🎯 效果：Token 成本 -81%、延迟 -80%、缓存命中 92%+"
+version: 1.11.0
+description: |
+  分层分级记忆系统 - 六层记忆架构（L1-L6）+ 缓存优化。
+  L1 会话记忆 → L2 短期记忆 → L3 长期记忆 → L4 技能记忆 → L5 任务上下文 → L6 全息记忆。
+  
+  Use when: 记忆系统, memory system, 六层记忆, L1-L6, 记忆分层, 上下文管理, 缓存优化.
+  
+  Do NOT use for:
+  - 单次会话记录（用 L1 session）
+  - Skill 创建（用 skill_manage）
+  - 数据持久化（用 file_write）
+  - 知识图谱（用 fact_store）
+  
+  v1.10.0 新增：
+  - ✅ 缓存优化系统集成（DeepSeek Prefix Caching）
+  - ✅ 平均缓存命中率 92%+，节省成本 80%+
+  - ✅ CLI 工具 hermes-cache（统计监控、优化建议）
+  - ✅ 固定前缀策略（从 HERMES.md 读取核心约束）
+  - 🎯 效果：Token 成本 -81%、延迟 -80%、缓存命中 92%+
+  
+  v1.9.0 新增：
+  - ✅ 六层记忆架构（L1-L6）
+  - ✅ L2 精简方法论（2491→1021 chars，-59%）
+  - ✅ 跨层协同优化（L2↔L5、L3↔L6、L4→L3）
+  - ✅ l5_to_l2_injector.py（高频实体反向注入）
+  - 🎯 效果：跨层一致性 +100%、重复录入 -80%
 category: core
-last_updated: 2026-05-03
+last_updated: 2026-05-04
+keywords:
+  - 记忆系统
+  - memory system
+  - 六层记忆
+  - L1-L6
+  - 记忆分层
+  - 上下文管理
+  - 缓存优化
+triggers:
+  - 记忆系统
+  - memory system
+  - 六层记忆
+  - L1 L2 L3 L4 L5 L6
+  - 记忆分层
+  - 上下文管理
+  - 缓存优化
 changes: |
   v1.7.0 (2026-05-03):
   - 重大更新：跨会话记忆连贯性完整解决方案
@@ -905,3 +914,320 @@ def verify_done_when(task_type, content=None):
 - 协作能力：单 Agent → 多 Agent 团队
 - 复用性：从零开始 → 80% 复用
 - 自演进：固化 → 持续优化
+
+---
+
+## ⚠️ Known Gotchas
+
+### L1 会话记忆问题
+
+- **上下文溢出**: 对话过长导致 Token 超限
+  ```python
+  # 监控 Token 使用
+  if token_count > max_tokens * 0.8:
+      # 自动压缩历史对话
+      compress_history()
+      # 或提醒用户
+      warn("上下文过长，建议开始新会话")
+  ```
+
+- **会话丢失**: 进程崩溃未保存
+  ```bash
+  # 定期保存会话
+  hermes session save
+  
+  # 恢复上次会话
+  hermes session restore last
+  ```
+
+### L2 短期记忆问题
+
+- **摘要质量差**: LLM 不可用时的降级
+  ```python
+  # daily-summarizer-v3.py 降级逻辑
+  try:
+      summary = llm_summarize(content)
+  except LLMUnavailable:
+      # 降级: 使用关键词提取
+      summary = keyword_extraction(content)
+  ```
+
+- **L2→L3 升级失败**: 高价值信息未持久化
+  ```python
+  # 检查升级条件
+  if is_high_value(info):
+      try:
+          fact_store.add(info)
+      except Exception as e:
+          log_error(e)
+          # 重试机制
+          retry_later(info)
+  ```
+
+- **L2 精简过度**: 丢失重要信息
+  ```python
+  # 保留关键信息
+  essential_fields = [
+      "user_preferences",
+      "important_decisions",
+      "learned_knowledge",
+      "task_progress",
+  ]
+  
+  # 压缩时检查
+  summary = compress(content, keep=essential_fields)
+  ```
+
+### L3 长期记忆问题
+
+- **重复录入**: 相同信息多次保存
+  ```python
+  # 使用 Embedding 检测重复
+  from memory_embedding import is_similar
+  
+  if is_similar(new_info, existing_info, threshold=0.85):
+      print("信息已存在，跳过录入")
+      return
+  ```
+
+- **检索效率低**: 大量历史数据
+  ```python
+  # 使用索引优化查询
+  CREATE INDEX idx_memory_timestamp ON long_term_memory(timestamp);
+  CREATE INDEX idx_memory_type ON long_term_memory(info_type);
+  
+  # 限制查询范围
+  SELECT * FROM long_term_memory 
+  WHERE timestamp > datetime('now', '-30 days')
+  LIMIT 50;
+  ```
+
+- **数据损坏**: 数据库文件损坏
+  ```bash
+  # 定期备份
+  cp ~/.hermem/memory/long_term.db ~/.hermes/backup/long_term_$(date +%Y%m%d).db
+  
+  # 检查数据完整性
+  sqlite3 ~/.hermes/memory/long_term.db "PRAGMA integrity_check"
+  ```
+
+### L4 技能记忆问题
+
+- **Skill 触发率低**: description 缺少触发词
+  ```yaml
+  # ❌ 错误: description 过于简单
+  description: "Helps with documents"
+  
+  # ✅ 正确: 包含触发词和排除条款
+  description: |
+    Generate technical documentation.
+    Use when: "write docs", "document API", 生成文档.
+    Do NOT use for: blog posts, marketing copy.
+  ```
+
+- **Skill 冲突**: 多个 Skill 匹配相同触发词
+  ```bash
+  # 检查 Skill 触发情况
+  hermes skills list --verbose
+  
+  # 添加排除条款避免冲突
+  # Do NOT use for: [相关但不属于的任务]
+  ```
+
+- **Skill 过时**: 内容与实际不符
+  ```bash
+  # 检查 Skill 版本
+  hermes skills list --outdated
+  
+  # 更新 Skill
+  hermes skills update <skill_name>
+  ```
+
+### L5 任务上下文问题
+
+- **任务检测误判**: 关键词匹配不准确
+  ```python
+  # 使用语义匹配替代关键词
+  from memory_embedding import semantic_match
+  
+  def detect_task(user_input):
+      if semantic_match(user_input, "stock analysis"):
+          return "stock_analysis"
+      # ...
+  ```
+
+- **中间结果丢失**: 任务中断未保存
+  ```python
+  # 定期保存任务进度
+  def save_progress(task_id, step, result):
+      task = load_task(task_id)
+      task.steps[step] = result
+      save_task(task)
+      
+  # 每完成一步就保存
+  for step in steps:
+      result = execute(step)
+      save_progress(task_id, step, result)
+  ```
+
+- **任务未清理**: 完成的任务占用内存
+  ```python
+  # 自动清理过期任务
+  def cleanup_tasks():
+      expired = get_expired_tasks(days=7)
+      for task in expired:
+          if task.status == "completed":
+              archive_task(task)
+              delete_task(task.id)
+  ```
+
+### L6 全息记忆问题
+
+- **实体解析错误**: 相同实体不同名称
+  ```python
+  # 使用规范化函数
+  def normalize_entity(entity):
+      # "Apple Inc." → "apple"
+      # "苹果公司" → "apple"
+      return entity.lower().strip()
+  ```
+
+- **信任分数衰减**: 旧信息未被更新
+  ```python
+  # 定期更新信任分数
+  def update_trust_scores():
+      facts = get_all_facts()
+      for fact in facts:
+          age = (now - fact.timestamp).days
+          fact.trust *= (0.99 ** age)  # 每天衰减 1%
+  ```
+
+- **跨层不一致**: L3 和 L6 数据冲突
+  ```python
+  # 定期同步
+  def sync_l3_l6():
+      l3_entities = get_l3_entities()
+      l6_entities = get_l6_entities()
+      
+      for entity in l3_entities:
+          if entity not in l6_entities:
+              # L3 → L6
+              add_to_l6(entity)
+  ```
+
+### 跨层协同问题
+
+- **L2↔L5 双向注入冲突**: 信息重复
+  ```python
+  # 使用去重逻辑
+  def inject_l5_to_l2(l5_info):
+      l2_summary = get_l2_summary()
+      if is_duplicate(l5_info, l2_summary):
+          return  # 跳过重复注入
+      update_l2(l5_info)
+  ```
+
+- **L3↔L6 同步延迟**: 数据不一致
+  ```python
+  # 使用事件驱动同步
+  def on_fact_added(fact):
+      # 实时同步到 L6
+      l6.add_fact(fact)
+      
+  def on_fact_updated(fact):
+      # 实时更新 L6
+      l6.update_fact(fact)
+  ```
+
+- **L4→L3 抽象失败**: Skill 无法转化为事实
+  ```python
+  # 检查抽象条件
+  if skill.usage_count > 10 and skill.success_rate > 0.8:
+      # 高质量 Skill → 抽象为事实
+      abstract_to_fact(skill)
+  ```
+
+### 缓存优化问题
+
+- **缓存命中率低**: Prompt 不稳定
+  ```python
+  # 使用固定前缀
+  fixed_prefix = read_file("HERMES.md")
+  
+  def build_prompt(user_input):
+      return fixed_prefix + "\n\n" + user_input
+  ```
+
+- **缓存过期策略错误**: 过早清除
+  ```python
+  # 根据内容稳定性设置 TTL
+  if is_stable_content(content):
+      ttl = 7 * 24 * 3600  # 7 天
+  else:
+      ttl = 24 * 3600  # 1 天
+  ```
+
+- **缓存雪崩**: 大量缓存同时过期
+  ```python
+  # 添加随机过期时间
+  import random
+  ttl = base_ttl + random.randint(0, 3600)  # 加 0-1 小时随机值
+  ```
+
+### 性能问题
+
+- **Embedding 计算慢**: CPU 模式性能差
+  ```python
+  # 使用缓存避免重复计算
+  embedding_cache = {}
+  
+  def get_embedding(text):
+      if text in embedding_cache:
+          return embedding_cache[text]
+      embedding = model.encode(text)
+      embedding_cache[text] = embedding
+      return embedding
+  ```
+
+- **LLM 摘要超时**: 内容过长
+  ```python
+  # 分段摘要
+  def summarize_long_content(content):
+      chunks = split_content(content, max_length=4000)
+      summaries = [llm_summarize(chunk) for chunk in chunks]
+      return llm_summarize("\n".join(summaries))
+  ```
+
+- **数据库查询慢**: 缺少索引
+  ```sql
+  -- 添加必要索引
+  CREATE INDEX idx_timestamp ON memory(timestamp);
+  CREATE INDEX idx_entity ON facts(entity);
+  CREATE INDEX idx_trust ON facts(trust_score);
+  ```
+
+### 数据迁移问题
+
+- **版本升级失败**: 数据格式不兼容
+  ```python
+  # 使用迁移脚本
+  def migrate_v1_to_v2():
+      # 1. 备份旧数据
+      backup_database()
+      
+      # 2. 转换格式
+      old_data = load_v1_data()
+      new_data = convert_to_v2(old_data)
+      
+      # 3. 验证数据
+      if validate_data(new_data):
+          save_v2_data(new_data)
+  ```
+
+- **数据丢失**: 迁移过程中断
+  ```python
+  # 使用事务保证原子性
+  with transaction():
+      migrate_data()
+      verify_migration()
+  ```
