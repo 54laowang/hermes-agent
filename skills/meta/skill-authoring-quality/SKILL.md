@@ -229,7 +229,160 @@ triggers:
 
 ---
 
-## 📚 References
+## 📝 Description 三要素标准（基于 Claude Code 14 模式）
+
+### 必需项
+
+每个 Skill 的 description 必须包含：
+
+```yaml
+description: |
+  [做什么] 简洁描述功能。
+  
+  [什么时候触发] Use when: keyword1, keyword2, "user says X".
+  
+  [什么时候别触发] Do NOT use for: related-but-different tasks.
+```
+
+**检查点**：
+- [ ] 包含"做什么"（功能描述）
+- [ ] 包含"什么时候触发"（触发词）
+- [ ] 包含"什么时候别触发"（排除条款）
+- [ ] 字符数 < 1024（开放 spec）或 < 1536（Claude Code）
+
+### 排除条款模板（按类别）
+
+```yaml
+# GitHub 类
+Do NOT use for:
+  - Committing without reviewing changes
+  - Force pushing to protected branches
+  - Deleting remote branches without backup
+
+# Finance 类
+Do NOT use for:
+  - Real trading without user confirmation
+  - Accessing sensitive financial data without authorization
+  - Executing trades in production environment
+
+# Creative 类
+Do NOT use for:
+  - Academic papers or research (preserve formal tone)
+  - Technical documentation that requires precision
+  - Legal or medical content (specialized language required)
+```
+
+---
+
+## 🔍 Known Gotchas 标准
+
+### 内容来源（优先级排序）
+
+1. **真实失败案例**（最高价值）- 从实际使用中提取
+2. **平台差异** - macOS/Linux/Windows 行为不同
+3. **依赖坑位** - 库、API、工具的已知问题
+4. **常见错误** - 用户易犯的错误
+
+### 撰写格式
+
+```markdown
+## Known Gotchas
+
+### [分类名称]
+
+- **[具体问题]**: [问题描述]
+  ```bash
+  [解决方案代码]
+  ```
+```
+
+### 示例（github-repo-management）
+
+```markdown
+## Known Gotchas
+
+### Authentication Issues
+
+- **`gh auth status` fails silently**: Check if `GITHUB_TOKEN` environment variable is set
+  ```bash
+  echo $GITHUB_TOKEN  # Should show token, not empty
+  ```
+
+### Common Mistakes
+
+- **Accidentally pushing to wrong remote**: Always verify before push
+  ```bash
+  git remote -v && git branch -vv  # Check remote and tracking
+  ```
+```
+
+---
+
+## 📊 Token 经济标准
+
+| 指标 | 合格 | 优秀 | 说明 |
+|------|------|------|------|
+| SKILL.md 行数 | ≤500 | ≤300 | 避免过度加载 |
+| Description 长度 | <1024 | <800 | 精炼触发信号 |
+| 引用图深度 | ≤2 跳 | 1 跳 | 扁平化结构 |
+
+---
+
+## 🚨 常见错误
+
+### ❌ 错误 1: Description 过于简单
+
+```yaml
+# 错误
+description: Helps with documents.
+
+# 正确
+description: |
+  Generate technical documentation from code.
+  
+  Use when: "write docs", "document API", "add comments", 生成文档.
+  
+  Do NOT use for: blog posts, marketing copy, creative writing.
+```
+
+### ❌ 错误 2: 缺少排除条款
+
+```yaml
+# 错误
+description: AI image generation tool.
+
+# 正确
+description: |
+  AI image generation with reference images and batch processing.
+  
+  Use when: "generate image", "画图", "text-to-image".
+  
+  Do NOT use for:
+  - Video generation (use video-gen skill)
+  - Image editing (use image-editor skill)
+  - 3D rendering (use 3d-render skill)
+```
+
+### ❌ 错误 3: 过度约束（MUST/ALWAYS/NEVER）
+
+```markdown
+# 错误
+MUST use constructor injection. NEVER use field injection.
+
+# 正确
+Use constructor injection. Field injection breaks testability because we 
+cannot mock the field without Spring context.
+```
+
+---
+
+## 📚 参考资料
+
+- `docs/claude-skill-patterns-14.md` - 14 个 Claude Skill 编写模式（完整学习笔记）
+- `SKILLS_OPTIMIZATION_PLAN.md` - 系统化优化计划
+- `scripts/skill_optimizer.py` - 批量优化工具
+
+---
 
 - [Done When 实施记录 - 2026-05-03](references/done-when-implementation-2026-05-03.md)
 - [上下文发现技术细节](references/context-discovery-technical-details.md)

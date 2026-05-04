@@ -1,9 +1,36 @@
 ---
 name: hermes-agent
-description: Hermes Agent 完整使用和扩展指南 — CLI 用法、设置、配置、生成额外代理、网关平台、skills、语音、工具、配置文件和贡献者参考。帮助用户配置 Hermes、排查问题、生成代理实例或进行代码贡献时加载此 skill。
-version: 2.1.0
+description: |
+  Hermes Agent 完整使用和扩展指南 — CLI 用法、设置、配置、生成额外代理、网关平台、skills、语音、工具。
+  
+  Use when: hermes, hermes setup, hermes config, Hermes配置, 安装Hermes, hermes cli, gateway, skill创建, agent配置, 多平台接入.
+  
+  Do NOT use for:
+  - Claude Code 相关问题（用 claude-code skill）
+  - Codex 相关问题（用 codex skill）
+  - 一般编程问题（用 coding skills）
+  - 其他 Agent 框架（如 LangChain、AutoGPT）
+version: 2.2.0
 author: Hermes Agent + Teknium
 license: MIT
+keywords:
+  - hermes
+  - hermes agent
+  - setup
+  - configuration
+  - multi-agent
+  - spawning
+  - cli
+  - gateway
+triggers:
+  - hermes setup
+  - hermes config
+  - Hermes配置
+  - 安装Hermes
+  - hermes cli
+  - gateway配置
+  - skill创建
+  - agent配置
 metadata:
   hermes:
     tags: [hermes, setup, configuration, multi-agent, spawning, cli, gateway, development]
@@ -1362,3 +1389,248 @@ def verify_done_when(task_type):
     
     return True  # 所有检查通过
 ```
+
+---
+
+## ⚠️ Known Gotchas
+
+### 安装和配置问题
+
+- **Python 版本不兼容**: 需要 Python 3.10+
+  ```bash
+  # 检查 Python 版本
+  python3 --version
+  
+  # 使用 pyenv 安装正确版本
+  pyenv install 3.10.13
+  pyenv global 3.10.13
+  ```
+
+- **依赖冲突**: 多个 Python 项目使用不同版本
+  ```bash
+  # 使用虚拟环境
+  python3 -m venv ~/.hermes/venv
+  source ~/.hermes/venv/bin/activate
+  
+  # 或使用 pyenv-virtualenv
+  pyenv virtualenv 3.10.13 hermes
+  pyenv activate hermes
+  ```
+
+- **权限问题**: macOS 系统目录权限
+  ```bash
+  # 给予 Hermes 目录权限
+  sudo chown -R $(whoami) ~/.hermes
+  
+  # macOS 安全设置
+  # 系统偏好设置 → 安全性与隐私 → 允许 Hermes
+  ```
+
+### Provider 配置陷阱
+
+- **API Key 未设置**: 环境变量未生效
+  ```bash
+  # 检查环境变量
+  echo $OPENROUTER_API_KEY
+  echo $ANTHROPIC_API_KEY
+  
+  # 添加到 ~/.hermes/.env
+  echo "OPENROUTER_API_KEY=sk-or-..." >> ~/.hermes/.env
+  ```
+
+- **模型切换失败**: Provider 不支持该模型
+  ```bash
+  # 检查可用模型
+  hermes models --provider openrouter
+  
+  # 使用支持的模型
+  hermes chat --model anthropic/claude-sonnet-4
+  ```
+
+- **Token 超限**: 上下文窗口溢出
+  ```python
+  # 使用 RTK 减少 token
+  rtk git status  # 节省 55%
+  rtk git commit  # 节省 85%
+  
+  # 或设置更小的上下文窗口
+  hermes config set context_window 64000
+  ```
+
+### Gateway 平台问题
+
+- **Telegram Bot Token 无效**: Token 过期或格式错误
+  ```bash
+  # 检查 Token 格式
+  echo $TELEGRAM_BOT_TOKEN
+  # 应为: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+  
+  # 重新获取 Token
+  # 与 @BotFather 对话 → /newbot
+  ```
+
+- **企业微信 Webhook 失效**: Webhook URL 变更
+  ```bash
+  # 检查 Webhook URL
+  echo $WECOM_WEBHOOK_URL
+  
+  # 重新获取
+  # 企业微信管理后台 → 应用管理 → 自建应用 → 设置 Webhook
+  ```
+
+- **Discord Bot 权限不足**: 缺少必要权限
+  ```
+  # Discord Bot 需要的权限：
+  # - Send Messages
+  # - Read Message History
+  # - Embed Links
+  # - Attach Files
+  
+  # 在 Discord Developer Portal 设置
+  ```
+
+### Skill 管理陷阱
+
+- **Skill 触发率低**: description 缺少触发词
+  ```yaml
+  # ❌ 错误: description 过于简单
+  description: "Helps with documents"
+  
+  # ✅ 正确: 包含触发词和排除条款
+  description: |
+    Generate technical documentation.
+    Use when: "write docs", "document API", 生成文档.
+    Do NOT use for: blog posts, marketing copy.
+  ```
+
+- **Skill 加载失败**: YAML 格式错误
+  ```bash
+  # 验证 YAML 格式
+  python3 -c "import yaml; yaml.safe_load(open('SKILL.md').read())"
+  
+  # 常见错误
+  # 1. 缩进不一致
+  # 2. 冒号后缺少空格
+  # 3. 特殊字符未转义
+  ```
+
+- **Skill 冲突**: 多个 Skill 匹配相同触发词
+  ```bash
+  # 检查 Skill 触发情况
+  hermes skills list --verbose
+  
+  # 添加排除条款避免冲突
+  # Do NOT use for: [相关但不属于的任务]
+  ```
+
+### Cron 任务问题
+
+- **Cron 未执行**: 时区配置错误
+  ```bash
+  # 检查系统时区
+  timedatectl
+  
+  # Cron 使用 UTC 时间
+  # 北京时间 9:00 = UTC 1:00
+  hermes cron create --schedule "0 1 * * *" ...
+  ```
+
+- **Cron 重复执行**: 任务未正确清理
+  ```bash
+  # 列出所有 cron 任务
+  hermes cron list
+  
+  # 删除重复任务
+  hermes cron remove <job_id>
+  ```
+
+- **Cron 超时**: 默认 60 秒超时
+  ```bash
+  # 设置更长的超时时间
+  hermes cron create --timeout 300 ...
+  ```
+
+### Memory 和 Session 问题
+
+- **Memory 丢失**: 数据库损坏
+  ```bash
+  # 备份 memory 数据库
+  cp ~/.hermes/memory_store.db ~/.hermes/memory_store.db.backup
+  
+  # 重建数据库
+  rm ~/.hermes/memory_store.db*
+  hermes memory rebuild
+  ```
+
+- **Session 混乱**: 多个 Session 交叉
+  ```bash
+  # 列出所有 session
+  hermes session list
+  
+  # 清理旧 session
+  hermes session clean --older-than 7d
+  ```
+
+- **Context 爆炸**: 对话历史过长
+  ```bash
+  # 清空当前会话
+  /clear
+  
+  # 或设置自动压缩
+  hermes config set auto_compress true
+  hermes config set compress_threshold 100000
+  ```
+
+### 工具调用问题
+
+- **工具调用失败**: 权限不足
+  ```bash
+  # 检查工具权限
+  hermes tools list
+  
+  # 启用特定工具
+  hermes config set tools.enable terminal,file,web
+  ```
+
+- **工具超时**: 执行时间过长
+  ```python
+  # 设置工具超时时间
+  terminal(command, timeout=300)  # 5 分钟
+  ```
+
+- **工具冲突**: 多个工具同名
+  ```yaml
+  # 在 config.yaml 中禁用冲突工具
+  tools:
+    disabled:
+      - duplicate_tool_name
+  ```
+
+### 性能优化
+
+- **响应缓慢**: Model 推理速度慢
+  ```bash
+  # 切换到更快的模型
+  hermes config set model openrouter/anthropic/claude-3-haiku
+  
+  # 或使用本地模型
+  hermes config set provider local
+  ```
+
+- **Token 消耗高**: 未使用 RTK
+  ```bash
+  # 安装 RTK
+  cargo install rtk
+  
+  # 在 HERMES.md 中配置
+  # <!-- rtk-instructions v2 -->
+  ```
+
+- **缓存命中率低**: Prompt 不稳定
+  ```python
+  # 使用 cache_aware_hook
+  # 在 hooks.yaml 中启用
+  hooks:
+    pre_llm_call:
+      - cache_aware_hook.main
+  ```
