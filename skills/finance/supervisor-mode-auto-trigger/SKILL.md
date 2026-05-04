@@ -432,6 +432,7 @@ hooks:
 
 - `references/supervisor-mode-integration.md` - 集成技术细节
 - `references/supervisor-mode-cases.md` - 成功/失败案例库
+- `references/hook-conflict-resolution.md` - Hook 冲突解决方案（v2.1 合并详情）
 - `scripts/test_supervisor_hook.py` - 自动化测试脚本
 
 ---

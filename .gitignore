@@ -48,6 +48,18 @@ cli-config.yaml
 
 # Skills Hub state (lives in ~/.hermes/skills/.hub/ at runtime, but just in case)
 skills/.hub/
+
+# Database files (runtime data)
+*.db
+*.db-shm
+*.db-wal
+
+# Session files (runtime data)
+sessions/
+memories/
+
+# Archived skills (already consolidated)
+skills/.archive/
 ignored/
 .worktrees/
 environments/benchmarks/evals/

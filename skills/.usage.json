@@ -386,14 +386,14 @@
   "global-constraints": {
     "archived_at": null,
     "created_at": "2026-05-02T10:19:11.381601+00:00",
-    "last_patched_at": "2026-05-04T13:32:15.917228+00:00",
-    "last_used_at": "2026-05-04T13:31:46.975081+00:00",
-    "last_viewed_at": "2026-05-04T13:31:46.973995+00:00",
-    "patch_count": 9,
+    "last_patched_at": "2026-05-04T17:14:59.360499+00:00",
+    "last_used_at": "2026-05-04T17:14:51.091479+00:00",
+    "last_viewed_at": "2026-05-04T17:14:51.090424+00:00",
+    "patch_count": 10,
     "pinned": false,
     "state": "active",
-    "use_count": 1,
-    "view_count": 1
+    "use_count": 3,
+    "view_count": 3
   },
   "grid-trading-monitor": {
     "archived_at": null,
@@ -770,14 +770,14 @@
   "supervisor-mode-auto-trigger": {
     "archived_at": null,
     "created_at": "2026-04-29T22:30:05.792996+00:00",
-    "last_patched_at": "2026-04-29T22:30:35.599823+00:00",
-    "last_used_at": "2026-05-02T03:00:04.296357+00:00",
-    "last_viewed_at": "2026-05-02T03:00:04.295427+00:00",
-    "patch_count": 2,
+    "last_patched_at": "2026-05-04T17:14:30.720920+00:00",
+    "last_used_at": "2026-05-04T17:13:52.616831+00:00",
+    "last_viewed_at": "2026-05-04T17:13:52.615298+00:00",
+    "patch_count": 4,
     "pinned": false,
     "state": "active",
-    "use_count": 2,
-    "view_count": 2
+    "use_count": 3,
+    "view_count": 3
   },
   "tech-news-aggregator": {
     "archived_at": null,

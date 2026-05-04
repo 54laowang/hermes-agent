@@ -241,4 +241,34 @@ bash ~/.hermes/skills/core/global-constraints/scripts/time_awareness_injector.sh
 
 ---
 
-**最后更新**：2026-05-02 18:20
+## ⚠️ Hook 系统架构（避免重复注入）
+
+### 功能域划分
+
+**原则**：每个功能域只由一个 Hook 负责
+
+| 功能域 | 负责 Hook | 说明 |
+|--------|-----------|------|
+| 时间感知 | `unified_time_awareness.main` | 合并了监察者 + Context Soul |
+| Skill 路由 | `smart-skill-loader.main` | 推荐相关 Skills |
+| 缓存优化 | `cache_aware_hook.main` | 缓存命中率优化 |
+
+### Hook 优先级顺序
+
+```yaml
+pre_llm_call:
+  - cache_aware_hook.main          # 优先级1：影响所有 Prompt
+  - unified_time_awareness.main    # 优先级2：时间锚定
+  - smart-skill-loader.main        # 优先级3：Skill 推荐
+```
+
+**优先级规则**：
+1. 缓存优化最先执行（影响后续所有注入）
+2. 时间锚定次之（数据准确性基础）
+3. Skill 路由最后（基于上下文推荐）
+
+**详见**：`../finance/supervisor-mode-auto-trigger/references/hook-conflict-resolution.md`
+
+---
+
+**最后更新**：2026-05-05 01:15
