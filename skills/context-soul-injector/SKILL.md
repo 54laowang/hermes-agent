@@ -1,19 +1,29 @@
 ---
 name: context-soul-injector
-version: 2.0.0
+version: 3.0.0
 description: |
-  给 Agent 注入灵魂：时间感知 + 持续搜索上下文 + 对话状态感知
-  通过 Hermes Shell Hook 自动注入，让 Agent 真正"活在时间里"。
+  灵魂注入器 - 已合并到统一时间感知模块。
+  
+  【v3.0 更新】时间感知功能已合并到 unified_time_awareness.py，避免重复注入。
+  
+  原功能保留：
+  - 搜索上下文注入（search.md）
+  - 对话状态感知
+  
+  移除功能（已合并）：
+  - 时间感知 → unified_time_awareness.py
 category: core
 author: hermes
 triggers:
   - 对话开始
-  - 时间相关查询
   - 上下文检索
 dependencies:
-  - ~/.hermes/hooks/time-sense-injector.py
+  - ~/.hermes/hooks/unified_time_awareness.py
   - ~/.hermes/search.md
   - ~/.hermes/config.yaml
+status: partial_merge
+merged_features:
+  time_awareness: unified_time_awareness
 ---
 
 # 灵魂注入器 - Context Soul Injector

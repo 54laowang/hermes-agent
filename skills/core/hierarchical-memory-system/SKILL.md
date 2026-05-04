@@ -476,6 +476,14 @@ memory.add("触发词 → 核心要点")
 
 ## 📚 References
 
+### 自进化系统完整文档
+
+- **[自进化系统架构](references/self-evolution-system.md)** ⭐ 重要
+  - 6大核心模块：反馈捕获、模式挖掘、规则优化、自愈、意图预测
+  - Darwin Skill：8维度评分 + 实测验证
+  - 进化生命周期：Observe → Discover → Improve → Measure → Recover → Predict
+  - 核心文件：`agent/self_evolution_*.py`
+
 ### Embedding 相似度检测（v1.6.0 核心技术）
 
 - **[Embedding 相似度技术实现](references/embedding-similarity-implementation.md)** ⭐ 新增

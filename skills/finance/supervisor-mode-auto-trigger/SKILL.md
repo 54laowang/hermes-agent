@@ -1,14 +1,14 @@
 ---
 name: supervisor-mode-auto-trigger
+version: 2.1.0
 description: |
-  监察者模式自动触发系统 - 通过Shell Hook实现零操作自动激活。
+  监察者模式自动触发系统 - 已合并到统一时间感知模块。
   
-  【v2.0 更新】方案A：所有会话注入核心规则 + 财经关键词触发详细提示。
+  【v2.1 更新】合并到 unified_time_awareness.py，避免与其他 Hook 冲突。
   
-  - 所有会话默认注入轻量级核心规则（时间锚定、数据源优先级、执行清单）
-  - 财经关键词触发完整监察者提示（时区换算、市场状态、详细检查点）
-  - 无需手动执行，关键词自动触发。
-version: 2.0.0
+  - 财经关键词自动触发完整时间锚定（美东时间、市场状态、数据源优先级）
+  - 非财经任务仅注入基础时间感知
+  - Token 节省 60%+
 category: finance
 keywords:
   - 监察者模式
@@ -24,6 +24,8 @@ triggers:
   - Fed/美联储/利率决议
   - A股走势/收盘/行情/分析
   - 上证指数/深证成指/创业板
+status: merged
+merged_into: unified_time_awareness
 ---
 
 # 监察者模式自动触发系统

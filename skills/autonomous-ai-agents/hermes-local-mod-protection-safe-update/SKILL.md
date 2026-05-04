@@ -492,6 +492,7 @@ python3 scripts/backup-before-update.py --workflows
 - **Gateway 配置丢失诊断** - 通过 SQLite 会话记录追溯配置丢失原因、预防措施、恢复流程（见 `references/gateway-config-loss-diagnosis.md`）
 - **环境变量备份系统** - 自动备份机制、恢复流程、最佳实践（见 `references/env-backup-system.md`）
 - **上游合并时 Skills 目录冲突处理** - 本地 skills 为独立仓库时如何合并上游（见 `references/upstream-merge-with-local-skills-conflict.md`）
+- **Git History Forensics for Concept Evolution** - 追踪概念/功能的演变历史，用于文档完整性验证（见 `references/git-history-forensics-for-concept-evolution.md`）
 
 ## 支持脚本
 
@@ -632,6 +633,137 @@ git reset HEAD .github/workflows  # 保持为未跟踪状态
 - 🔑 **临时移除策略** - 先推送核心代码，workflows 作为未跟踪文件本地保留
 - 🔑 **从上游恢复** - `git checkout origin/main -- .github/workflows`
 - 🔑 **避免 Git 管理** - 使用 `git reset HEAD` 保持未跟踪状态，方便下次推送
+
+### 案例 3.5: 强制推送前必须检查远程历史（2026-05-04）⚠️
+
+**背景：**
+- 本地仓库：只有 2 个提交
+- 远程仓库：用户之前的 fork 历史
+- 操作：执行 `git push -f`（强制推送）
+
+**错误现象：**
+- 远程仓库历史被完全覆盖
+- 用户之前 fork 的文件"消失"
+
+**问题根源：**
+```bash
+# 执行前未检查远程状态
+git push origin main --force
+# 直接覆盖远程，未确认是否会影响远程历史
+```
+
+**正确流程：**
+
+```bash
+# 1. 推送前检查远程与本地差异
+git fetch origin
+git log --oneline HEAD..origin/main | wc -l  # 检查远程是否有本地没有的提交
+
+# 2. 如果远程有历史，必须先合并再推送
+if [ $(git log --oneline HEAD..origin/main | wc -l) -gt 0 ]; then
+    echo "⚠️  警告：远程仓库有本地没有的历史提交"
+    echo "强制推送会覆盖远程历史，是否继续？"
+    read -p "输入 'yes' 确认: " confirm
+    if [ "$confirm" != "yes" ]; then
+        echo "❌ 操作已取消"
+        exit 1
+    fi
+fi
+
+# 3. 更安全的做法：先添加上游，合并后再推送
+git remote add upstream https://github.com/nousresearch/hermes-agent.git
+git fetch upstream
+git merge upstream/main --allow-unrelated-histories -m "Merge upstream"
+git push origin main
+```
+
+**经验总结：**
+- 🔴 **强制推送是危险操作** - 会完全覆盖远程历史
+- 🔑 **推送前必须检查** - `git fetch` + `git log HEAD..origin/main`
+- 🔑 **优先合并而非覆盖** - 添加上游仓库，合并后再推送
+- 🔑 **用户确认机制** - 强制推送前向用户说明风险并确认
+- 🔑 **保守式原则** - 宁可多一步合并，也不要覆盖远程历史
+
+### 案例 3.6: Skills 目录是独立 Git 仓库导致合并冲突（2026-05-04）✅
+
+**背景：**
+- 本地 `skills/` 目录：独立的 Git 仓库（包含 `.git` 子目录）
+- 上游仓库：也有 `skills/` 目录
+- 合并操作：`git merge upstream/main`
+
+**错误现象：**
+```
+error: The following untracked working tree files would be overwritten by merge:
+    skills/apple/DESCRIPTION.md
+    skills/apple/SKILL.md
+    ...
+Please move or remove them before you merge.
+Aborting
+```
+
+**问题根源：**
+- `skills/` 目录是独立的 Git 仓库（submodule 或嵌套仓库）
+- Git 无法直接合并两个独立的仓库
+
+**解决策略：**
+
+```bash
+# 方法 1：临时移除 skills 目录（推荐）
+mv skills skills_backup
+git merge upstream/main --allow-unrelated-histories -m "Merge upstream"
+mv skills_backup skills
+
+# 方法 2：使用 `-X ours` 策略（保留本地版本）
+# 注意：不适用于未跟踪文件
+git merge upstream/main --allow-unrelated-histories -X ours
+
+# 方法 3：将 skills 添加到 .gitignore（如果不需要跟踪）
+echo "skills/" >> .gitignore
+git add .gitignore
+git commit -m "chore: 将 skills 目录排除在 Git 管理外"
+git merge upstream/main
+```
+
+**完整流程：**
+
+```bash
+# 1. 检查 skills 是否是独立仓库
+ls -la skills/.git  # 如果存在，说明是独立仓库
+
+# 2. 临时移除 skills
+mv skills skills_backup
+
+# 3. 合并上游
+git merge upstream/main --allow-unrelated-histories -m "Merge upstream"
+
+# 4. 恢复 skills
+rm -rf skills  # 删除上游的 skills（如果有）
+mv skills_backup skills
+
+# 5. 提交恢复
+git add -A
+git commit -m "Merge upstream 后恢复本地 skills 目录"
+```
+
+**验证清单：**
+
+```bash
+# 1. 检查合并结果
+git log --oneline | head -5
+
+# 2. 检查 skills 目录完整性
+ls -la skills/ | wc -l
+find skills -name "SKILL.md" | wc -l
+
+# 3. 检查是否有残留冲突
+git status
+```
+
+**经验总结：**
+- 🔑 **独立仓库检测** - `ls -la skills/.git` 检查是否是嵌套仓库
+- 🔑 **临时移除策略** - 移除 → 合并 → 恢复，最安全
+- 🔑 **保留本地版本** - 如果本地 skills 很重要，必须先备份
+- 🔑 **`.gitignore` 策略** - 如果不需要跟踪，添加到 `.gitignore`
 
 ### 案例 3.5: Rebase 时 workflows 文件冲突（2026-05-01）
 
@@ -1627,6 +1759,44 @@ gh repo view 54laowang/hermes-agent --web
 ```
 
 ### 5.5 文档维护最佳实践
+
+**文档完整性检查流程（重要）：**
+
+在更新 README 或 FORK_COMPARISON_REPORT 前，**必须先读取相关 Skill 的完整内容**，避免遗漏重要架构细节。
+
+```bash
+# 示例：生成 Fork 对比报告前，先读取相关 Skill
+skill_view(name="hierarchical-memory-system")  # 获取六层记忆架构完整描述
+skill_view(name="tiancai-agent-principles")     # 获取天才智能体四大原则
+
+# 验证文档是否遗漏关键内容
+grep -n "L6\|双层自演进\|天才智能体" FORK_COMPARISON_REPORT.md
+```
+
+**常见遗漏场景：**
+
+| 文档类型 | 容易遗漏的内容 | 检查方法 |
+|---------|--------------|---------|
+| Fork 对比报告 | L5/L6 记忆架构细节 | `skill_view(name="hierarchical-memory-system")` |
+| README 更新 | 天才智能体四大原则 | `skill_view(name="tiancai-agent-principles")` |
+| 更新日志 | 性能优化具体数据 | 检查 `git log` 中的 commit message |
+
+**Git History Forensics 技巧：**
+
+当用户问"X呢？"、"Y什么时候有的？"时，使用 Git 历史追溯概念演变：
+
+```bash
+# 1. 查找概念引入的 commit
+git log --all --oneline --grep="关键词" -- <文件路径>
+
+# 2. 查看具体变更
+git show <commit-hash> -- <文件路径>
+
+# 3. 追踪概念演变时间线
+git log --all -p -- <文件路径> | grep -A 10 -B 5 "关键词"
+```
+
+**详细案例见**: `references/git-history-forensics-for-concept-evolution.md`
 
 **README 中文翻译详细流程：**
 
