@@ -83,6 +83,73 @@
 【试错演进】─────────────→【时间线收敛】
 ```
 
+#### ✅ 完整自进化系统（6大模块）
+
+**核心文件**：
+- `agent/self_evolution_agent.py` (15KB) — 主控制器
+- `agent/self_evolution_feedback.py` (12KB) — 反馈捕获引擎
+- `agent/self_evolution_mining.py` (14KB) — 模式挖掘引擎
+- `agent/self_evolution_optimizer.py` (14KB) — 规则优化引擎
+- `agent/self_evolution_healing.py` (12KB) — 自愈引擎
+- `agent/self_evolution_predictor.py` (13KB) — 意图预测引擎
+
+**进化生命周期**：
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐
+│ Observe │────▶│ Discover│────▶│ Improve │
+└─────────┘     └─────────┘     └─────────┘
+      ▲              │               │
+      │              ▼               ▼
+┌─────────┐     ┌─────────┐     ┌─────────┐
+│ Predict │────▶│ Recover │◀────│ Measure │
+└─────────┘     └─────────┘     └─────────┘
+```
+
+**五大核心能力**：
+1. **Feedback Capture** — 观察每次交互，记录成功/失败
+2. **Pattern Mining** — 发现重复模式，识别优化机会
+3. **Rule Optimization** — 改进路由规则，提升准确率
+4. **Self-Healing** — 检测异常自动恢复
+5. **Intent Prediction** — 预测用户意图，提前准备
+
+**触发条件**：
+- 每 50 次交互触发一次进化周期
+- 准确率 < 60% 时立即优化
+- 检测到异常时自动修复
+
+#### ✅ Darwin Skill（自主优化器）
+
+**设计哲学**：
+- 单一可编辑资产 — 每次只改一个 SKILL.md
+- 双重评估 — 结构评分 + 效果验证（实测）
+- 棘轮机制 — 只保留改进，自动回滚退步
+- 独立评分 — 子agent评分，避免偏差
+- 人在回路 — 每次优化需用户确认
+
+**8维度评分 Rubric（总分100）**：
+
+| 维度 | 权重 | 说明 |
+|------|------|------|
+| Frontmatter质量 | 8 | name规范、description完整 |
+| 工作流清晰度 | 15 | 步骤明确、有输入/输出 |
+| 边界条件覆盖 | 10 | 异常处理、fallback |
+| 检查点设计 | 7 | 关键决策前确认 |
+| 指令具体性 | 15 | 可直接执行、有示例 |
+| 资源整合度 | 5 | references路径正确 |
+| 整体架构 | 15 | 结构清晰、无冗余 |
+| 实测表现 | 25 | 跑测试prompt验证 |
+
+**优化流程**：
+```
+Phase 0: 初始化 → 扫描skills、创建git分支
+Phase 1: 评估 → 结构分析 + 实测验证
+Phase 2: 改进 → hill-climbing搜索
+Phase 3: 验证 → 子agent独立评分
+Phase 4: 确认 → 用户确认后merge
+Phase 5: 回滚 → 退步自动回滚
+Phase 6: 卡片 → 生成可视化结果
+```
+
 ---
 
 ### 2️⃣ 性能优化
