@@ -1,6 +1,25 @@
 ---
-name: install-third-party-tools-for-hermes
-description: 为 Hermes Agent 发现、评估和安装第三方 Skill/MCP 工具。当用户问"有没有其他开源方案""下载安装某个工具""给 Hermes 添加 XX 能力"时使用。覆盖 GitHub 搜索评估、MCP/Skill 选择决策、配置写入和安装验证全流程。
+     2|name: install-third-party-tools-for-hermes
+     3|description: |
+  为 Hermes Agent 发现、评估和安装第三方 Skill/MCP 工具。当用户问"有没有其他开源方案""下载安装某个工具""给 Hermes 添加 XX 能力"时使用。覆盖 GitHub 搜索评估、MCP/Skill 选择决策、配置写入和安装验证全流程。
+  
+  Use when: 安装工具, install tools, 第三方工具, third party tools, Skill发现, MCP插件, 工具评估.
+  
+  Do NOT use for:
+  - Hermes 配置（用 hermes-agent）、创建 Skills（用 skill_manage）、编码任务（用 coding skills）
+     4|
+keywords:
+  - 安装工具
+  - install tools
+  - 第三方工具
+  - third party tools
+  - Skill发现
+triggers:
+  - 安装工具
+  - install tools
+  - 第三方工具
+  - third party tools
+  - Skill发现
 ---
 
 # 为 Hermes 安装第三方工具
@@ -1189,3 +1208,65 @@ print("可点击元素:", [e for e in snapshot["elements"] if e["clickable"]])
 - **集成方式**：Hermes config.yaml 配置 + API 调用
 - **参考文档**：`references/camofox-browser-integration.md`
 - **典型应用**：小红书评论抓取、问财数据获取、券商后台访问
+
+---
+
+## ⚠️ Known Gotchas
+
+### 工具发现问题
+
+- **工具仓库不全**: 未覆盖所有可用工具
+  ```bash
+  # 多源搜索
+  # 1. GitHub: topic:hermes-skill, topic:mcp-server
+  # 2. PyPI: 搜索 hermes-*
+  # 3. NPM: 搜索 @hermes/*
+  # 4. Awesome Lists: awesome-ai-agents
+  ```
+
+- **工具质量参差不齐**: 缺少质量评估
+  ```python
+  # 评估维度
+  # 1. GitHub Stars > 100
+  # 2. 最近更新 < 6 个月
+  # 3. 有文档和示例
+  # 4. 有测试覆盖
+  # 5. 开源许可证
+  ```
+
+### 安装问题
+
+- **依赖冲突**: 工具依赖与 Hermes 冲突
+  ```bash
+  # 使用虚拟环境
+  python3 -m venv ~/.hermes/venv
+  source ~/.hermes/venv/bin/activate
+  pip install tool-name
+  ```
+
+- **权限问题**: 无法写入安装目录
+  ```bash
+  # 检查权限
+  ls -la ~/.hermes/tools
+  
+  # 修复权限
+  chmod -R u+rw ~/.hermes/tools
+  ```
+
+### 兼容性问题
+
+- **Hermes 版本不兼容**: 工具需要特定版本
+  ```bash
+  # 检查 Hermes 版本
+  hermes --version
+  
+  # 查看工具要求
+  cat tool/requirements.txt | grep hermes
+  ```
+
+- **Python 版本冲突**: 工具需要不同 Python
+  ```bash
+  # 使用 pyenv 管理多版本
+  pyenv install 3.10.13
+  pyenv shell 3.10.13
+  ```

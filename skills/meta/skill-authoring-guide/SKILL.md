@@ -440,6 +440,7 @@ skill_manage(action="write_file", name="skill-name", file_path="references/topic
 - `hierarchical-memory-system` - 分层记忆系统
 - `skill-authoring-quality` - Skill 创作质量标准（Done When + 上下文发现）
 - **`references/known-gotchas-best-practices.md`** - Known Gotchas 编写最佳实践（必读）
+- **`references/batch-optimization-case-study-2026-05-05.md`** - 批量优化实战案例（本次会话完整记录）
 
 ---
 

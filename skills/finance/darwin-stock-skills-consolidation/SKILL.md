@@ -1,11 +1,30 @@
 ---
-name: darwin-stock-skills-consolidation
-description: 达尔文进化方法论 - 股票相关 Skills 系统性整合优化。基于自然选择、渐进优化、功能特化和生态平衡四大原则，将 13 个分散的股票 Skills 整合为 4 个核心 Skills，提升完整度从 40% 到 100%。
-author: Hermes
-tags: [darwin, evolution, stock, trading, optimization, consolidation, skill-evolution]
-version: 1.0.0
-created: 2026-05-02
-status: planning
+     2|name: darwin-stock-skills-consolidation
+     3|description: |
+  达尔文进化方法论 - 股票相关 Skills 系统性整合优化。基于自然选择、渐进优化、功能特化和生态平衡四大原则，将 13 个分散的股票 Skills 整合为 4 个核心 Skills，提升完整度从 40% 到 100%。
+  
+  Use when: 达尔文进化, Skills整合, stock skills, 自然选择, 渐进优化, Skill合并.
+  
+  Do NOT use for:
+  - 创建新 Skill（用 skill_manage）、一般优化（用其他 skills）、非财经 Skills
+     4|author: Hermes
+     5|tags: [darwin, evolution, stock, trading, optimization, consolidation, skill-evolution]
+     6|version: 1.0.1
+     7|created: 2026-05-02
+     8|status: planning
+     9|
+keywords:
+  - 达尔文进化
+  - Skills整合
+  - stock skills
+  - 自然选择
+  - 渐进优化
+triggers:
+  - 达尔文进化
+  - Skills整合
+  - stock skills
+  - 自然选择
+  - 渐进优化
 ---
 
 # 达尔文进化方法论 - 股票 Skills 整合计划
@@ -719,3 +738,66 @@ boundaries = len(re.findall(r'\*\*BC-[A-Z]+-\d+\*\*', content))
 - 📊 **量化管理**: 78+ 检查点、57+ 异常处理、78+ 边界条件
 - 🎯 **聚焦核心**: 每层专注单一核心能力
 - 🔄 **生态协同**: 四层协作形成完整决策链
+
+---
+
+## ⚠️ Known Gotchas
+
+### 达尔文进化方法论问题
+
+- **自然选择误判**: 错误淘汰有用 Skill
+  ```python
+  # 保留核心能力
+  essential_skills = [
+      "data_fetch",
+      "analysis",
+      "risk_check",
+  ]
+  
+  # 不要淘汰核心能力
+  ```
+
+- **渐进优化失败**: 一次性大规模重构
+  ```python
+  # ❌ 错误: 一次改太多
+  merge_all_skills_at_once()
+  
+  # ✅ 正确: 分模块渐进
+  for module in modules:
+      merge_module(module)
+      validate_module(module)
+  ```
+
+### Skill 合并问题
+
+- **功能重叠**: 多个 Skills 做同样的事
+  ```python
+  # 检查重复功能
+  for skill1, skill2 in skill_pairs:
+      if overlap(skill1, skill2) > 0.7:
+          merge(skill1, skill2)
+  ```
+
+- **依赖冲突**: 合并后依赖不兼容
+  ```python
+  # 检查依赖兼容性
+  deps1 = get_dependencies(skill1)
+  deps2 = get_dependencies(skill2)
+  
+  if not compatible(deps1, deps2):
+      resolve_conflict(deps1, deps2)
+  ```
+
+### 质量保证问题
+
+- **测试覆盖不足**: 合并后未测试
+  ```python
+  # 每次合并后必须测试
+  def test_merged_skill():
+      # 1. 功能测试
+      test_core_functions()
+      # 2. 边界测试
+      test_edge_cases()
+      # 3. 性能测试
+      test_performance()
+  ```

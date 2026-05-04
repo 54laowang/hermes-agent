@@ -1,9 +1,36 @@
 ---
 name: claude-code
-description: 将编码任务委派给 Claude Code（Anthropic 的 CLI 代理）。用于构建功能、重构、PR 审查和迭代编码。需要安装 claude CLI。
-version: 2.2.0
+description: |
+  将编码任务委派给 Claude Code（Anthropic 的 CLI 代理）。用于构建功能、重构、PR 审查和迭代编码。需要安装 claude CLI。
+  
+  Use when: claude code, 编码任务, coding task, 代码审查, code review, 重构, refactoring, PR审查, Claude CLI.
+  
+  Do NOT use for:
+  - Hermes 配置问题（用 hermes-agent skill）
+  - Codex/OpenCode 任务（用 codex/opencode skills）
+  - 非编码任务（用相应 skills）
+  - 批量文件操作（用 file/terminal 工具）
+version: 2.3.0
 author: Hermes Agent + Teknium
 license: MIT
+keywords:
+  - claude code
+  - 编码任务
+  - coding task
+  - 代码审查
+  - code review
+  - 重构
+  - refactoring
+  - Claude CLI
+triggers:
+  - claude code
+  - 编码任务
+  - coding task
+  - 代码审查
+  - code review
+  - 重构
+  - refactoring
+  - PR审查
 metadata:
   hermes:
     tags: [Coding-Agent, Claude, Anthropic, Code-Review, Refactoring, PTY, Automation]
@@ -1131,3 +1158,296 @@ claude -p "任务描述" --max-turns 3
 | 上下文溢出 | ✅ /compact | ❌ | 监控上下文使用率 |
 | tmux冲突 | ✅ 杀旧会话 | ❌ | 用后清理 |
 | 预算超限 | ✅ 提高预算 | ❌ | 设置合理上限 |
+
+---
+
+## ⚠️ Known Gotchas
+
+### 认证和权限问题
+
+- **认证过期**: Claude Code 会话失效
+  ```bash
+  # 检查认证状态
+  claude auth status
+  
+  # 重新认证
+  claude auth login
+  
+  # 或使用 API Key
+  export ANTHROPIC_API_KEY="sk-ant-..."
+  claude auth login --console
+  ```
+
+- **权限不足**: 无法访问项目目录
+  ```bash
+  # 检查目录权限
+  ls -la /path/to/project
+  
+  # 修复权限
+  chmod -R u+rw /path/to/project
+  
+  # 或切换到有权限的用户
+  sudo -u owner claude -p "task"
+  ```
+
+- **工作区信任失败**: Print 模式跳过信任提示
+  ```bash
+  # Print 模式自动信任
+  # ❌ 不推荐在不受信任的代码库使用
+  claude -p "analyze code"
+  
+  # ✅ 正确: 先手动信任工作区
+  claude trust /path/to/project
+  claude -p "task"
+  ```
+
+### Print 模式陷阱
+
+- **超时未设置**: 默认 60 秒不够
+  ```python
+  # ❌ 错误: 未设置超时
+  terminal("claude -p 'complex task'")
+  
+  # ✅ 正确: 设置足够超时
+  terminal(
+      "claude -p 'complex task' --max-turns 20",
+      timeout=300  # 5 分钟
+  )
+  ```
+
+- **JSON Schema 解析失败**: 输出格式不符合预期
+  ```bash
+  # 使用 --json-schema 严格约束
+  claude -p "extract APIs" \
+    --json-schema '{"type": "array", "items": {"type": "string"}}'
+  ```
+
+- **allowedTools 过宽**: 给予过多权限
+  ```bash
+  # ❌ 错误: 允许所有工具
+  claude -p "task" --allowedTools "*"
+  
+  # ✅ 正确: 仅允许必要工具
+  claude -p "task" --allowedTools "Read,Edit,Write"
+  ```
+
+### PTY/tmux 模式问题
+
+- **tmux 会话残留**: 未正确清理
+  ```bash
+  # 检查残留会话
+  tmux list-sessions
+  
+  # 清理所有 Claude 会话
+  tmux kill-session -t claude-* 2>/dev/null
+  
+  # 或强制清理
+  tmux kill-server
+  ```
+
+- **PTY 响应超时**: 交互式提示卡住
+  ```python
+  # 设置合理的读取超时
+  process = terminal(
+      "claude",
+      background=True,
+      pty=True,
+      timeout=300
+  )
+  
+  # 等待响应
+  time.sleep(2)
+  output = process.poll()
+  ```
+
+- **多轮对话丢失上下文**: 会话重启后失忆
+  ```python
+  # 保存会话状态
+  session_id = save_session()
+  
+  # 恢复会话
+  claude resume <session_id>
+  ```
+
+### 工具调用问题
+
+- **Edit 工具失败**: 文件内容不匹配
+  ```python
+  # Claude Code 使用字符串匹配编辑
+  # ❌ 错误: 空格/缩进不匹配
+  # ✅ 正确: 精确匹配原文件内容
+  
+  # 先 Read 查看原始内容
+  # 再 Edit 精确替换
+  ```
+
+- **Bash 工具被禁**: 安全策略限制
+  ```bash
+  # 检查工具权限
+  claude -p "list tools" --allowedTools "Read"
+  
+  # 启用必要工具
+  claude -p "task" --allowedTools "Read,Edit,Bash"
+  ```
+
+- **文件路径错误**: 相对路径解析失败
+  ```python
+  # ❌ 错误: 相对路径
+  claude -p "edit src/main.py"
+  
+  # ✅ 正确: 使用 workdir
+  terminal(
+      "claude -p 'edit src/main.py'",
+      workdir="/absolute/path/to/project"
+  )
+  ```
+
+### 成本控制问题
+
+- **预算超支**: 未设置 max-budget
+  ```bash
+  # 设置预算上限
+  claude -p "task" --max-budget-usd 1.00
+  
+  # 监控成本
+  # 每次 API 调用都会累计
+  # 超过预算自动停止
+  ```
+
+- **Token 浪费**: 重复读取大文件
+  ```python
+  # 避免重复读取
+  # ❌ 错误: 多次读取同一文件
+  for file in files:
+      claude -p f"read {file}"
+  
+  # ✅ 正确: 一次性读取多个文件
+  claude -p f"read {' '.join(files)}"
+  ```
+
+- **模型选择错误**: Sonnet/Opus 不匹配任务
+  ```bash
+  # 简单任务用 Haiku（便宜）
+  claude -p "fix typo" --model claude-3-haiku
+  
+  # 复杂任务用 Sonnet（平衡）
+  claude -p "refactor module" --model claude-3-sonnet
+  
+  # 困难任务用 Opus（强大）
+  claude -p "architectural redesign" --model claude-3-opus
+  ```
+
+### 并发和冲突
+
+- **多个 Claude 实例冲突**: 同时修改同一文件
+  ```python
+  # 使用锁机制
+  import fcntl
+  
+  with open("/tmp/claude.lock", "w") as lock:
+      fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+      terminal("claude -p 'task'")
+      fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+  ```
+
+- **Git 冲突**: Claude 提交与本地冲突
+  ```bash
+  # 提交前先拉取
+  claude -p "git pull && make changes && git commit"
+  
+  # 或使用分支隔离
+  claude -p "git checkout -b feature/ai-gen && make changes"
+  ```
+
+- **IDE 文件监控**: 文件变化触发重载
+  ```bash
+  # 临时禁用 IDE 监控
+  # VSCode: 设置 "files.watcherExclude"
+  # JetBrains: Settings → Appearance → Disable auto-reload
+  ```
+
+### 性能问题
+
+- **启动慢**: 首次运行需要初始化
+  ```bash
+  # 预热 Claude Code
+  claude --version
+  claude doctor
+  ```
+
+- **大文件处理慢**: 文件超过 1MB
+  ```python
+  # 分段处理大文件
+  chunks = split_large_file(file, max_size=500000)
+  for chunk in chunks:
+      result = claude -p f"process: {chunk}"
+  ```
+
+- **网络延迟**: API 调用慢
+  ```python
+  # 使用缓存
+  # 相同请求会复用结果
+  
+  # 或切换到更近的 API endpoint
+  export ANTHROPIC_API_BASE="https://api.anthropic.com"
+  ```
+
+### 输出质量
+
+- **代码风格不一致**: 与项目规范冲突
+  ```bash
+  # 提供 CLAUDE.md 或 .cursorrules
+  # Claude Code 会自动读取项目规范
+  
+  # 或显式指定
+  claude -p "follow PEP 8, max line length 88"
+  ```
+
+- **生成代码有 Bug**: 未经过测试
+  ```python
+  # 要求 Claude 生成测试
+  claude -p "implement feature X and write tests"
+  
+  # 或使用 TDD
+  claude -p "write tests first, then implement"
+  ```
+
+- **理解偏差**: 任务描述不清晰
+  ```python
+  # ❌ 错误: 模糊描述
+  claude -p "optimize code"
+  
+  # ✅ 正确: 明确目标
+  claude -p "optimize performance: reduce time complexity from O(n²) to O(n log n)"
+  ```
+
+### 兼容性问题
+
+- **Node.js 版本不兼容**: 需要 Node 18+
+  ```bash
+  # 检查 Node 版本
+  node --version
+  
+  # 升级 Node
+  nvm install 18
+  nvm use 18
+  ```
+
+- **操作系统限制**: Windows/WSL 路径问题
+  ```bash
+  # Windows: 使用 WSL
+  wsl claude -p "task"
+  
+  # 或使用 Git Bash
+  # 注意路径转换: C:\path → /c/path
+  ```
+
+- **环境变量缺失**: ANTHROPIC_API_KEY 未设置
+  ```bash
+  # 检查环境变量
+  echo $ANTHROPIC_API_KEY
+  
+  # 添加到 ~/.bashrc
+  echo 'export ANTHROPIC_API_KEY="sk-ant-..."' >> ~/.bashrc
+  source ~/.bashrc
+  ```

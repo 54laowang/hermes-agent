@@ -1,6 +1,25 @@
 ---
-name: huashu-design
-description: 花叔Design（Huashu-Design）——用HTML做高保真原型、交互Demo、幻灯片、动画、设计变体探索+设计方向顾问+专家评审的一体化设计能力。HTML是工具不是媒介，根据任务embody不同专家（UX设计师/动画师/幻灯片设计师/原型师），避免web design tropes。触发词：做原型、设计Demo、交互原型、HTML演示、动画Demo、设计变体、hi-fi设计、UI mockup、prototype、设计探索、做个HTML页面、做个可视化、app原型、iOS原型、移动应用mockup、导出MP4、导出GIF、60fps视频、设计风格、设计方向、设计哲学、配色方案、视觉风格、推荐风格、选个风格、做个好看的、评审、好不好看、review this design。**主干能力**：Junior Designer工作流（先给假设+reasoning+placeholder再迭代）、反AI slop清单、React+Babel最佳实践、Tweaks变体切换、Speaker Notes演示、Starter Components（幻灯片外壳/变体画布/动画引擎/设备边框）、App原型专属守则（默认从Wikimedia/Met/Unsplash取真图、每台iPhone包AppPhone状态管理器可交互、交付前跑Playwright点击测试）、Playwright验证、HTML动画→MP4/GIF视频导出（25fps基础 + 60fps插帧 + palette优化GIF + 6首场景化BGM + 自动fade）。**需求模糊时的Fallback**：设计方向顾问模式——从5流派×20种设计哲学（Pentagram信息建筑/Field.io运动诗学/Kenya Hara东方极简/Sagmeister实验先锋等）推荐3个差异化方向，展示24个预制showcase（8场景×3风格），并行生成3个视觉Demo让用户选。**交付后可选**：专家级5维度评审（哲学一致性/视觉层级/细节执行/功能性/创新性各打10分+修复清单）。
+     2|name: huashu-design
+     3|description: |
+  花叔Design（Huashu-Design）——用HTML做高保真原型、交互Demo、幻灯片、动画、设计变体探索+设计方向顾问+专家评审的一体化设计能力。HTML是工具不是媒介，根据任务embody不同专家（UX设计师/动画师/幻灯片设计师/原型师），避免web design tropes。触发词：做原型、设计Demo、交互原型、HTML演示、动画Demo、设计变体、hi-fi设计、UI mockup、prototype、设计探索、做个HTML页面、做个可视化、app原型、iOS原型、移动应用mockup、导出MP4、导出GIF、60fps视频、设计风格、设计方向、设计哲学、配色方案、视觉风格、推荐风格、选个风格、做个好看的、评审、好不好看、review this design。**主干能力**：Junior Designer工作流（先给假设+reasoning+placeholder再迭代）、反AI slop清单、React+Babel最佳实践、Tweaks变体切换、Speaker Notes演示、Starter Components（幻灯片外壳/变体画布/动画引擎/设备边框）、App原型专属守则（默认从Wikimedia/Met/Unsplash取真图、每台iPhone包AppPhone状态管理器可交互、交付前跑Playwright点击测试）、Playwright验证、HTML动画→MP4/GIF视频导出（25fps基础 + 60fps插帧 + palette优化GIF + 6首场景化BGM + 自动fade）。**需求模糊时的Fallback**：设计方向顾问模式——从5流派×20种设计哲学（Pentagram信息建筑/Field.io运动诗学/Kenya Hara东方极简/Sagmeister实验先锋等）推荐3个差异化方向，展示24个预制showcase（8场景×3风格），并行生成3个视觉Demo让用户选。**交付后可选**：专家级5维度评审（哲学一致性/视觉层级/细节执行/功能性/创新性各打10分+修复清单）。
+  
+  Use when: 花叔设计, HTML原型, 交互Demo, 幻灯片, 设计变体, 高保真原型.
+  
+  Do NOT use for:
+  - 生产代码（用 coding skills）、图片生成（用 image_gen）、UI设计（用 design skills）
+     4|
+keywords:
+  - 花叔设计
+  - HTML原型
+  - 交互Demo
+  - 幻灯片
+  - 设计变体
+triggers:
+  - 花叔设计
+  - HTML原型
+  - 交互Demo
+  - 幻灯片
+  - 设计变体
 ---
 
 # 花叔Design · Huashu-Design
@@ -799,3 +818,60 @@ Skill 路径引用均采用**相对本 skill 根目录**的形式（`references/
 - **涉及具体品牌**：走「核心资产协议」（§1.a）——Logo（必需）+ 产品图（实体产品必需）+ UI 截图（数字产品必需），色值只是辅助。**不要用 CSS 剪影代替真实产品图**。
 - **做动画之前**：必读 `references/animation-pitfalls.md`——里面 14 条规则每条都来自真实踩过的坑，跳过会让你重做 1-3 轮。
 - **手写 Stage / Sprite**（不用 `assets/animations.jsx`）：必须实现两件事——(a) tick 第一帧同步设 `window.__ready = true` (b) 检测 `window.__recording === true` 时强制 loop=false。否则录视频必出问题。
+
+---
+
+## ⚠️ Known Gotchas
+
+### 模板问题
+
+- **模板加载失败**: 路径不正确
+  ```bash
+  # 检查模板路径
+  ls ~/.hermes/templates/huashu/
+  
+  # 使用绝对路径
+  template = "/full/path/to/template.html"
+  ```
+
+- **模板语法错误**: 变量未定义
+  ```html
+  <!-- ❌ 错误: 未定义变量 -->
+  <div>{{ undefined_var }}</div>
+  
+  <!-- ✅ 正确: 提供默认值 -->
+  <div>{{ var | default('N/A') }}</div>
+  ```
+
+### 浏览器截图问题
+
+- **截图失败**: 浏览器未安装
+  ```bash
+  # 安装 Playwright 浏览器
+  playwright install chromium
+  ```
+
+- **截图模糊**: 分辨率不够
+  ```python
+  # 设置高分辨率
+  viewport = {"width": 1920, "height": 1080}
+  device_scale_factor = 2  # 2x 分辨率
+  ```
+
+### 内容问题
+
+- **中文显示异常**: 字体缺失
+  ```css
+  /* 安装中文字体 */
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  ```
+
+- **样式冲突**: CSS 优先级问题
+  ```css
+  /* 使用 !important 或更具体的选择器 */
+  .container .title {
+    color: red !important;
+  }
+  ```

@@ -1,9 +1,32 @@
 ---
 name: native-mcp
-description: 内置 MCP (Model Context Protocol) 客户端，连接外部 MCP 服务器，发现其工具并注册为原生 Hermes Agent 工具。支持 stdio 和 HTTP 传输，带自动重连、安全过滤和零配置工具注入。
-version: 1.1.0
+description: |
+  内置 MCP (Model Context Protocol) 客户端，连接外部 MCP 服务器，发现其工具并注册为原生 Hermes Agent 工具。支持 stdio 和 HTTP 传输，带自动重连、安全过滤和零配置工具注入。
+  
+  Use when: MCP, Model Context Protocol, MCP服务器, MCP client, 插件系统, 工具集成, MCP配置.
+  
+  Do NOT use for:
+  - 创建 MCP 服务器（用 MCP SDK）
+  - HTTP API 调用（用 web tools）
+  - 其他协议（如 gRPC、REST）
+  - 临时 MCP 调用（用 mcporter）
+version: 1.2.0
 author: Hermes Agent
 license: MIT
+keywords:
+  - MCP
+  - Model Context Protocol
+  - MCP服务器
+  - MCP client
+  - 插件系统
+  - 工具集成
+triggers:
+  - MCP
+  - Model Context Protocol
+  - MCP服务器
+  - MCP client
+  - 插件系统
+  - 工具集成
 metadata:
   hermes:
     tags: [MCP, Tools, Integrations]
@@ -806,3 +829,63 @@ hermes mcp restart <server_name>
 - [Official MCP Servers](https://github.com/modelcontextprotocol/servers)
 - [Hermes Agent Documentation](https://hermes-agent.nousresearch.com/docs)
 - `mcporter` skill: Ad-hoc MCP tool calls without configuration
+
+---
+
+## ⚠️ Known Gotchas
+
+### 连接问题
+
+- **MCP 服务器启动失败**: 命令不正确
+  ```yaml
+  # config.yaml 配置
+  mcp_servers:
+    filesystem:
+      command: "npx"  # ❌ 可能找不到
+      args: ["-y", "@modelcontextprotocol/server-filesystem"]
+  
+  # ✅ 正确: 使用完整路径
+  command: "/usr/bin/npx"
+  ```
+
+- **stdio 传输阻塞**: 缓冲区满
+  ```python
+  # 确保服务器及时 flush
+  # MCP 服务器代码
+  sys.stdout.flush()  # 每次输出后刷新
+  ```
+
+### 工具注册问题
+
+- **工具名称冲突**: 多个服务器提供同名工具
+  ```yaml
+  # config.yaml 使用前缀
+  mcp_servers:
+    server1:
+      tool_prefix: "s1_"  # 工具名变为 s1_tool_name
+  ```
+
+- **工具参数不兼容**: Schema 不匹配
+  ```python
+  # 检查工具 Schema
+  tool_schema = mcp_client.get_tool_schema("tool_name")
+  print(tool_schema)
+  
+  # 调整参数格式
+  ```
+
+### 性能问题
+
+- **启动慢**: 多个 MCP 服务器串行启动
+  ```yaml
+  # 并行启动
+  mcp_config:
+    parallel_startup: true
+    startup_timeout: 30  # 秒
+  ```
+
+- **工具调用慢**: 网络延迟
+  ```python
+  # 使用缓存
+  # 或切换到本地 stdio 服务器
+  ```

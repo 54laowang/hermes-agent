@@ -1,19 +1,32 @@
 ---
-name: grid-trading-system
-description: ETF网格交易执行系统 - 配置管理、行情获取、触发检测、交易执行、状态管理。整合自 grid-trading-monitor，完整度 100%
-version: 2.0.0
-category: finance
-layer: 交易执行层
-source_skills:
-  - grid-trading-monitor
-dependencies:
-  - stock-data-acquisition
-  - a-share-trading-calendar
-triggers:
+     2|name: grid-trading-system
+     3|description: |
+  ETF网格交易执行系统 - 配置管理、行情获取、触发检测、交易执行、状态管理。整合自 grid-trading-monitor，完整度 100%
+  
+  Use when: 网格交易, grid trading, ETF交易, 自动交易, 交易执行, 网格策略.
+  
+  Do NOT use for:
+  - 交易分析（用 stock-analysis）、策略回测（用 vibe-trading）、风险管理
+     4|version: 2.0.1
+     5|category: finance
+     6|layer: 交易执行层
+     7|source_skills:
+     8|  - grid-trading-monitor
+     9|dependencies:
+    10|  - stock-data-acquisition
+    11|  - a-share-trading-calendar
+    12|triggers:
+    13|  - 网格交易
+    14|  - ETF交易
+    15|  - 恒生科技ETF
+    16|  - 网格监控
+    17|  - 交易执行
+    18|
+keywords:
   - 网格交易
+  - grid trading
   - ETF交易
-  - 恒生科技ETF
-  - 网格监控
+  - 自动交易
   - 交易执行
 ---
 
@@ -508,3 +521,63 @@ enabled_toolsets: ["terminal", "send_message"]
 - 监控脚本: `~/.hermes/grid-trading/grid_monitor.py`
 - 配置文件: `~/.hermes/grid-trading/config.json`
 - 状态文件: `~/.hermes/grid-trading/status.json`
+
+---
+
+## ⚠️ Known Gotchas
+
+### 交易执行问题
+
+- **交易失败**: 余额不足
+  ```python
+  # 检查可用资金
+  available = broker.get_available_cash()
+  if available < required:
+      print("资金不足，无法执行交易")
+  ```
+
+- **滑点过大**: 市价单偏离预期
+  ```python
+  # 使用限价单
+  order = broker.place_limit_order(
+      price=current_price * 0.99,  # 1% 滑点容忍
+      quantity=100
+  )
+  ```
+
+### 网格配置问题
+
+- **网格过密**: 手续费侵蚀利润
+  ```python
+  # 计算最小网格间距
+  min_spacing = fee_rate * 2  # 至少覆盖双向手续费
+  
+  # 例如: 手续费 0.1%
+  # 最小间距 = 0.2%
+  ```
+
+- **网格过疏**: 错过交易机会
+  ```python
+  # 根据波动率调整
+  if volatility < 0.02:  # 低波动
+      spacing = 0.01  # 1%
+  else:  # 高波动
+      spacing = 0.02  # 2%
+  ```
+
+### 监控问题
+
+- **推送失败**: 通知渠道失效
+  ```bash
+  # 检查企业微信 Webhook
+  curl -X POST $WECOM_WEBHOOK_URL     -d '{"msgtype": "text", "text": {"content": "test"}}'
+  ```
+
+- **数据源中断**: 行情获取失败
+  ```python
+  # 多数据源切换
+  try:
+      price = get_price_from_sina(code)
+  except:
+      price = get_price_from_eastmoney(code)
+  ```

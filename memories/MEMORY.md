@@ -11,3 +11,5 @@ Hook 冲突已解决：创建了 unified_time_awareness.py 统一模块，合并
 学习了 14 个 Claude Skill 编写模式（Bilgin Ibryam 系列）。核心洞见：1) 触发是生死关口 - description 必须包含触发词和排除条款；2) 约束太死是普遍错误 - 用 Explain-the-Why 替代 MUST/NEVER；3) Gotchas 价值最高 - 只能从真实失败案例提取；4) 渐进式披露省 Token - SKILL.md < 500 行；5) 模板+示例组合 - 骨架+肉。当前 Hermes Skills 现状：503 个，97% 缺排除条款，99.4% 缺 Gotchas。
 §
 Skill 批量优化方法论已完善：5步骤流程（分析→优先级→优化→版本→提交）+ 优先级矩阵（P0基础设施/P1核心/P2辅助）+ Gotchas写作规范（真实失败+对比示例+分类+最低10条）+ 实战案例（Top 5 核心 Skills, 85+ Gotchas）
+§
+Skill 批量优化学习成果已保存：skill-authoring-guide/references/batch-optimization-case-study-2026-05-05.md 包含 Top 5 + 第一梯队共 9 个 Skills 优化完整记录（195+ Known Gotchas，优先级决策矩阵，关键经验）。
