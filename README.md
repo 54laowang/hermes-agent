@@ -34,7 +34,7 @@
 ### 📊 六层记忆架构
 
 ```
-L6: Skills 系统（82 个可复用流程）
+L6: 双层自演进（团队技能 + 成员技能演进）
     ↓
 L5: Context Memory（任务特定上下文）
     ↓
@@ -42,7 +42,7 @@ L4: 全息记忆（fact_store + KG）
     ↓
 L3: 知识归档（MemPalace）
     ↓
-L2: 短期记忆（memory tool）
+L2: 短期记忆（7天自动摘要）
     ↓
 L1: 会话记忆（SQLite sessions）
 ```
@@ -53,6 +53,20 @@ L1: 会话记忆（SQLite sessions）
 - **MemPalace**：完整文档、历史记录
 - **Skills**：可复用工作流程
 - **Context Memory**：任务步骤追踪
+- **双层自演进**：团队技能优化、错误经验沉淀
+
+**L6 双层自演进机制**：
+```
+【团队技能层演进】
+  触发：同类任务完成 ≥2 次
+  内容：增加角色、补充规则、优化流程
+  存储：evolution_patches.json
+
+【成员技能层演进】
+  触发：工具报错 / 接口超时
+  内容：沉淀错误处理经验
+  效果：避免重复踩坑
+```
 
 ### 💰 DeepSeek Prefix Caching 优化
 
