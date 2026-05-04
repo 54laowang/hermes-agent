@@ -172,6 +172,60 @@ bundle(v1, v2, ...) → circular_mean  # 合并多个概念
   └─ 异常 → 写入干预文件 → subagent读取并纠正
 ```
 
+#### ✅ Smart Skill Router（智能路由系统）
+
+**引入时间**：2026年4月30日
+
+**核心文件**：
+- `smart-skill-router/hooks/skill-router.py` (17KB) — 主路由器
+- `smart-skill-router/hooks/semantic-skill-matcher-v2.py` (15KB) — 语义匹配
+- `smart-skill-router/hooks/smart-skill-loader.py` (2.4KB) — 自动加载Hook
+- `smart-skill-router/hooks/skill-feedback-tracker.py` (7KB) — 反馈追踪
+- `smart-skill-router/scripts/skill-performance-monitor.py` (11KB) — 性能监控
+- `smart-skill-router/scripts/skill-auto-cleanup.py` (9.8KB) — 自动清理
+- `skills/context-soul-injector/scripts/time-sense-injector.py` (9.3KB) — 时间感知
+
+**性能指标**：
+
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| **匹配准确率** | 90%+ | 关键词70% + 语义30% |
+| **响应时间** | <5ms | 缓存命中时 |
+| **首次响应** | ~200ms | 可预热至 <10ms |
+| **Token节省** | 60-70% | 智能缓存 + 精准匹配 |
+
+**8大核心能力**：
+
+| # | 能力 | 文件 | 状态 |
+|---|------|------|------|
+| 1 | **时间感知** | `time-sense-injector.py` | ✅ 自动生效 |
+| 2 | **Skill自动加载** | `smart-skill-loader.py` | ✅ 自动生效 |
+| 3 | **Skill路由** | `skill-router.py` | ✅ 自动生效 |
+| 4 | **语义匹配** | `semantic-skill-matcher-v2.py` | ✅ 自动生效 |
+| 5 | **反馈追踪** | `skill-feedback-tracker.py` | ✅ 自动生效 |
+| 6 | **性能监控** | `skill-performance-monitor.py` | 🟡 手动使用 |
+| 7 | **自动清理** | `skill-auto-cleanup.py` | 🟡 手动使用 |
+| 8 | **NPC分支** | 集成到主路由 | ✅ 自动生效 |
+
+**工作原理**：
+```
+用户消息 → pre_llm_call Hook → skill-router.py
+  ├─ 领域检测（10大领域）
+  ├─ 关键词匹配（70%权重）
+  ├─ 语义匹配（30%权重）
+  ├─ 冲突消解（优先级规则）
+  └─ 返回推荐 Skills（≤3个）
+    → 注入系统提示 → LLM调用
+```
+
+**10大领域**：
+财经、AI科技、微信生态、设计、开发、数据、知识管理、营销、自动化、macOS
+
+**冲突消解规则**：
+- 时间感知版本优先
+- 功能全面的优先
+- 使用频率高的优先
+
 #### ✅ 完整自进化系统（6大模块）
 
 **核心文件**：
