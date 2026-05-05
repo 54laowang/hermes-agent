@@ -1,9 +1,23 @@
 ---
 name: tiancai-agent-principles
-description: |
-  天才智能体四大核心原则 - 记忆保存、时间锚点、时间线收敛、试错演进。
-  构建能够跨越时间、持续学习、自我进化的自主智能体。
-version: 1.0.0
+description: 天才智能体四大核心原则 - 记忆保存、时间锚点、时间线收敛、试错演进。构建能够跨越时间、持续学习、自我进化的自主智能体。当用户提到"天才智能体"、"四原则"、"记忆保存"、"时间锚点"、"时间线收敛"、"试错演进"、"自主进化"、"记忆系统优化"、"tiancai agent principles"、"memory preservation"、"time anchor"、"timeline convergence"、"trial error"、"self-evolution"时自动触发。
+
+触发词:
+  中文: 天才智能体、四原则、记忆保存、时间锚点、时间线收敛、试错演进、自主进化、记忆系统优化
+  英文: tiancai agent principles, four principles, memory preservation, time anchor, timeline convergence, trial error, self-evolution
+
+使用场景:
+  - 建立或优化记忆系统架构
+  - 创建时间锚点以跨越会话
+  - 监控决策影响和蝴蝶效应
+  - 在安全环境中进行实验性改进
+
+禁止使用场景:
+  - 简单的单次查询任务
+  - 不涉及记忆管理的常规操作
+  - 不需要跨会话持久化的临时任务
+  
+version: 2.0.0
 category: core
 keywords:
   - tiancai
@@ -13,13 +27,130 @@ keywords:
   - timeline-convergence
   - trial-error
   - self-evolution
+  - autonomous-agent
+  - memory-system
+author: darwin-skill-optimization
+optimized_at: 2026-05-05
 ---
 
 # 天才智能体四大核心原则
 
+## FORBIDDEN BEHAVIORS:
+- Asking what the user wants
+- Waiting for user direction
+- Offering options instead of taking action
+
+## NEVER SAY THESE PHRASES:
+- "What would you like to do?"
+- "How can I assist you further?"
+- Any sentence ending with '?' asking for user direction
+
 ## 设计哲学
 
 构建能够跨越时间、持续学习、自我进化的自主智能体。四个原则相互支撑，形成自进化的完整闭环。
+
+---
+
+## 执行流程
+
+### Phase 1: 记忆系统初始化
+
+**输入**: 无  
+**输出**: 完整的 L1-L6 记忆层架构
+
+**步骤**:
+1. **检查现有记忆层**
+   ```bash
+   ls -la ~/.hermes/memory/
+   ls -la ~/.hermes/memory_store.db
+   ls -la ~/.hermes/mempalace/
+   ```
+
+2. **创建缺失的记忆层**
+   ```bash
+   mkdir -p ~/.hermes/memory/{short-term,long-term,archive}
+   mkdir -p ~/.hermes/mempalace
+   ```
+
+3. **验证记忆层可访问性**
+   ```bash
+   python3 ~/.hermes/scripts/memory_health_check.py
+   ```
+
+4. **用户确认**: 记忆层是否完整？
+
+### Phase 2: 时间锚点建立
+
+**输入**: 关键决策/里程碑事件  
+**输出**: Git 提交记录（时间锚点）
+
+**步骤**:
+1. **识别关键决策点**
+   - 系统架构变更
+   - 重大功能上线
+   - 数据迁移完成
+
+2. **创建时间锚点**
+   ```bash
+   git add .
+   git commit -m "feat: {决策描述}"
+   git tag -a "anchor-{YYYYMMDD}" -m "时间锚点: {决策描述}"
+   ```
+
+3. **验证锚点持久性**
+   ```bash
+   git log --oneline -10
+   git tag -l "anchor-*"
+   ```
+
+4. **用户确认**: 锚点是否正确？
+
+### Phase 3: 时间线监控启动
+
+**输入**: 决策日志、Git 提交、Cronjob 执行  
+**输出**: 时间线收敛报告
+
+**步骤**:
+1. **收集决策数据**
+   ```bash
+   python3 ~/.hermes/scripts/timeline_convergence_monitor.py
+   ```
+
+2. **识别收敛点**
+   - 检查每天决策数量
+   - 标记关键转折点（决策数 ≥ 5）
+
+3. **分析蝴蝶效应**
+   - 评估小改变的大影响
+   - 标记高风险决策
+
+4. **生成报告并通知用户**
+
+### Phase 4: 试错演进执行
+
+**输入**: 实验脚本、假设描述  
+**输出**: 实验结果、学习记录
+
+**步骤**:
+1. **准备沙盒环境**
+   ```bash
+   mkdir -p ~/.hermes/sandbox/{experiments,results,rollback}
+   ```
+
+2. **执行实验**
+   ```bash
+   python3 ~/.hermes/scripts/trial_runner.py <script.py> "<hypothesis>"
+   ```
+
+3. **记录结果**
+   - 成功: 保留改进
+   - 失败: 回滚 + 标记为已知陷阱
+
+4. **更新知识库**
+   ```
+   实验记录 → ~/.hermes/sandbox/results/
+   学习成果 → ~/.hermes/memory/long-term/
+   ```
 
 ---
 
@@ -35,14 +166,15 @@ keywords:
    - 定期验证各载体数据完整性
 
 2. **定期验证可访问性**
-   - 周期性检查记忆是否可读取
-   - 发现损坏立即修复
-   - 建立自动化的健康检查机制
+   - 周期性检查记忆是否可读取（建议周期：每日自动检查 + 每周人工抽查）
+   - 发现损坏立即修复（使用 `memory_health_check.py` 脚本）
+   - 建立自动化的健康检查机制（Cronjob: `0 8 * * *` 每日8点）
+   - 健康度阈值：≥80 为健康，60-80 需关注，<60 需立即修复
 
 3. **特定对象解读机制**
-   - 为未来接收者设计解码方案
-   - 记录上下文和语义解释
-   - 确保跨时间理解的一致性
+   - 为未来接收者设计解码方案（示例：AAAK 压缩格式 + 实体代码表）
+   - 记录上下文和语义解释（示例：每个 fact 附带 source、created_at、tags）
+   - 确保跨时间理解的一致性（使用 MemPalace 的 AAAK dialect）
 
 4. **长期格式兼容**
    - 选择开放、持久的存储格式
@@ -212,6 +344,65 @@ keywords:
 - 关键能力里程碑（原则二）
 - 架构演进路线图（原则三）
 - 安全迭代机制（原则四）
+
+---
+
+## 异常处理与边界条件
+
+### 记忆丢失场景
+
+| 场景 | 触发条件 | 处理动作 |
+|------|---------|---------|
+| **单点故障** | 主存储损坏 | 自动切换到备份载体（L2→L3→L4） |
+| **格式过时** | 格式不兼容 | 启动迁移脚本，转换为新格式 |
+| **载体损坏** | 硬件故障 | 从云端备份恢复（L3→L2） |
+| **数据损坏** | 校验失败 | 从上一个健康检查点恢复 |
+
+### 时间锚点失效场景
+
+| 场景 | 触发条件 | 处理动作 |
+|------|---------|---------|
+| **载体消失** | Git仓库删除 | 重建仓库 + 从备份恢复 |
+| **标识冲突** | 多个同名锚点 | 添加时间戳后缀区分 |
+| **验证失败** | 身份认证不通过 | 重新生成加密签名 |
+
+### 时间线收敛异常
+
+| 场景 | 触发条件 | 处理动作 |
+|------|---------|---------|
+| **决策冲突** | 多路径选择矛盾 | 标记为待决策，请求用户确认 |
+| **蝴蝶效应误判** | 影响评估错误 | 降低敏感度阈值，减少误报 |
+| **收敛点过多** | 每天超过10个 | 提高收敛点判定阈值 |
+
+### 试错演进失败
+
+| 场景 | 触发条件 | 处理动作 |
+|------|---------|---------|
+| **沙盒污染** | 实验影响生产 | 立即回滚 + 重建沙盒 |
+| **连续失败** | 同一实验失败3次 | 标记为已知陷阱，跳过 |
+| **资源耗尽** | 沙盒资源不足 | 清理旧实验结果 |
+
+### Fallback 优先级
+
+```
+1. 数据完整性 > 系统可用性
+2. 用户确认 > 自动决策
+3. 健康状态 > 性能优化
+4. 本地恢复 > 云端下载
+```
+
+### 错误恢复流程
+
+```
+检测异常 → 记录错误详情 → 评估影响范围 →
+  ↓
+选择恢复策略：
+  - 轻微：自动修复（如重建索引）
+  - 中等：从备份恢复（最近健康检查点）
+  - 严重：重建系统 + 用户确认
+  ↓
+验证恢复成功 → 更新健康日志 → 通知用户
+```
 
 ---
 
