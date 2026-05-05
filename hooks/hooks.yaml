@@ -1,0 +1,18 @@
+# Hermes Hooks Configuration
+# 更新时间：2026-05-05
+# 冲突解决：合并时间感知层，避免重复注入
+
+hooks:
+  pre_llm_call:
+    # 优先级1：缓存优化（最高优先）
+    - cache_aware_hook.main
+    
+    # 优先级2：统一时间感知（合并了 time-sense-injector 和 supervisor-precheck）
+    - unified_time_awareness.main
+    
+    # 优先级3：Skill 智能路由
+    # - smart-skill-loader.main  # 待验证后启用
+  
+  post_llm_call:
+    # 任务上下文检测
+    - task_context_detector.main

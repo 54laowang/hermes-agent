@@ -1,3 +1,3 @@
 ---
-description: Skills for setting up, configuring, and managing game servers, modpacks, and gaming-related infrastructure.
+description: 游戏服务器技能 — 搭建、配置和管理游戏服务器、Mod 包和游戏相关基础设施。
 ---

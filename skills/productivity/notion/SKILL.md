@@ -1,6 +1,6 @@
 ---
 name: notion
-description: "Notion API via curl: pages, databases, blocks, search."
+description: 通过 curl 使用 Notion API 创建和管理页面、数据库和块。直接从终端搜索、创建、更新和查询 Notion 工作区。
 version: 1.0.0
 author: community
 license: MIT

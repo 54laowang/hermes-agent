@@ -1,6 +1,6 @@
 ---
 name: opencode
-description: "Delegate coding to OpenCode CLI (features, PR review)."
+description: 将编码任务委派给 OpenCode CLI 代理，用于功能实现、重构、PR 审查和长时间自主会话。需要安装并认证 opencode CLI。
 version: 1.2.0
 author: Hermes Agent
 license: MIT

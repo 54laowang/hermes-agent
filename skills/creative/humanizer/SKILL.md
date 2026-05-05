@@ -1,9 +1,32 @@
 ---
 name: humanizer
-description: "Humanize text: strip AI-isms and add real voice."
-version: 2.5.1
+description: |
+  Humanize text: strip AI-isms and add real voice.
+  
+  Use when: "humanize", "de-AI", "de-slop", "un-ChatGPT", "make natural", "remove AI patterns", 人性化, 去AI化, 自然化.
+  
+  Do NOT use for:
+  - Academic papers or research (preserve formal tone)
+  - Technical documentation that requires precision
+  - Legal or medical content (specialized language required)
+  - Creative writing where AI patterns may be intentional
+  - Translations (use translation skill instead)
+version: 2.5.2
 author: Siqi Chen (@blader, https://github.com/blader/humanizer), ported by Hermes Agent
 license: MIT
+keywords:
+  - humanize
+  - de-AI
+  - natural writing
+  - AI patterns
+  - text editing
+triggers:
+  - humanize text
+  - remove AI patterns
+  - make text natural
+  - de-AI text
+  - un-ChatGPT
+  - 去AI化
 metadata:
   hermes:
     tags: [writing, editing, humanize, anti-ai-slop, voice, prose, text]
@@ -575,3 +598,94 @@ This skill is ported from [blader/humanizer](https://github.com/blader/humanizer
 Original author: Siqi Chen ([@blader](https://github.com/blader)). Original repo: https://github.com/blader/humanizer (version 2.5.1). Ported to Hermes Agent with Hermes-native tool references (`read_file`, `patch`, `write_file`) and guidance for when to load the skill; the 29 patterns, personality/soul section, and full worked example are preserved verbatim from the source. Original MIT license preserved in the `LICENSE` file alongside this `SKILL.md`.
 
 Key insight from Wikipedia: "LLMs use statistical algorithms to guess what should come next. The result tends toward the most statistically likely result that applies to the widest variety of cases."
+
+---
+
+## Known Gotchas
+
+### Over-Humanization Issues
+
+- **Removing necessary formal language**: Don't strip technical terms or required formal tone
+  ```
+  ❌ Wrong: "The algorithm does its thing..." 
+  ✅ Right: "The algorithm processes the data..."
+  ```
+
+- **Losing professional voice in business context**: Maintain appropriate tone
+  ```
+  ❌ Too casual: "Hey, so about that quarterly report..."
+  ✅ Right: "The quarterly report shows significant progress..."
+  ```
+
+- **Breaking structured content**: Don't disrupt lists, tables, or code blocks
+  ```
+  ❌ Wrong: Reformatting API documentation into prose
+  ✅ Right: Keep structure, only soften transitions
+  ```
+
+### Context-Specific Pitfalls
+
+- **Academic writing**: Some "AI patterns" are actually academic conventions
+  ```
+  # These are OK in academic context:
+  - "This study aims to..."
+  - "The results demonstrate that..."
+  - "In conclusion, this research..."
+  ```
+
+- **Technical documentation**: Clarity > naturalness
+  ```
+  ❌ Wrong: "So you wanna run this thing..."
+  ✅ Right: "To execute the script, run..."
+  ```
+
+- **Legal/medical content**: Never modify specialized terminology
+  ```
+  # Keep exact phrasing:
+  - "The plaintiff alleges..."
+  - "Contraindications include..."
+  ```
+
+### Common Mistakes
+
+- **Applying all 29 patterns blindly**: Not every pattern needs fixing in every text
+  ```
+  # Pick relevant patterns, don't force-fit all
+  ```
+
+- **Rewriting instead of editing**: Preserve author's intended meaning
+  ```
+  ❌ Wrong: Completely changing the narrative voice
+  ✅ Right: Softening AI patterns while keeping voice
+  ```
+
+- **Forgetting to show diffs**: Always show what changed
+  ```
+  # Use patch or show before/after sections
+  ```
+
+### Voice Calibration Failures
+
+- **Over-matching sample voice**: Don't copy sample's quirks exactly
+  ```
+  Sample: "I kinda think maybe we should..."
+  ❌ Wrong: Adopting excessive hedging
+  ✅ Right: Capturing casual tone without excess
+  ```
+
+- **Ignoring audience**: Match voice to audience, not just author
+  ```
+  # Internal memo ≠ blog post ≠ customer email
+  ```
+
+### Platform-Specific Issues
+
+- **Character limits (Twitter/X)**: Humanization can increase length
+  ```
+  # May need to re-compress after humanizing
+  ```
+
+- **Markdown rendering**: Some patterns affect formatting
+  ```
+  # Check that links, headers, lists still work
+  ```

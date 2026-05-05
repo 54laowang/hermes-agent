@@ -1,6 +1,6 @@
 ---
 name: pokemon-player
-description: "Play Pokemon via headless emulator + RAM reads."
+description: 通过无头模拟器自主游玩 Pokemon 游戏。启动游戏服务器、从 RAM 读取结构化游戏状态、做出战略决策并发送按键输入 — 全部通过终端完成。
 tags: [gaming, pokemon, emulator, pyboy, gameplay, gameboy]
 ---
 # Pokemon Player

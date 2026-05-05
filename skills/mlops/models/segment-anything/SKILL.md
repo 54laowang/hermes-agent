@@ -1,6 +1,6 @@
 ---
 name: segment-anything-model
-description: "SAM: zero-shot image segmentation via points, boxes, masks."
+description: 图像分割基础模型，支持零样本迁移。使用点、框或掩码作为提示分割图像中的任意对象，或自动生成图像中所有对象的掩码。
 version: 1.0.0
 author: Orchestra Research
 license: MIT
@@ -134,7 +134,6 @@ masks = processor.image_processor.post_process_masks(
 
 ### Model architecture
 
-<!-- ascii-guard-ignore -->
 ```
 SAM Architecture:
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -145,7 +144,6 @@ SAM Architecture:
    Image Embeddings      Prompt Embeddings         Masks + IoU
    (computed once)       (per prompt)             predictions
 ```
-<!-- ascii-guard-ignore-end -->
 
 ### Model variants
 

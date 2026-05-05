@@ -1,6 +1,6 @@
 ---
 name: audiocraft-audio-generation
-description: "AudioCraft: MusicGen text-to-music, AudioGen text-to-sound."
+description: PyTorch 音频生成库，包括文本生音乐 (MusicGen) 和文本生音效 (AudioGen)。用于从文本描述生成音乐、创建音效或旋律条件音乐生成。
 version: 1.0.0
 author: Orchestra Research
 license: MIT

@@ -1,0 +1,8 @@
+{
+  "last_report_path": "/Users/me/.hermes/logs/curator/20260429-202523",
+  "last_run_at": "2026-04-29T20:25:23.385586+00:00",
+  "last_run_duration_seconds": 573.878877,
+  "last_run_summary": "auto: no changes; llm: Now let me write the final summary:\n\n---\n\n## 📊 CONSOLIDATION PASS COMPLETE\n\n### Summary\n\n| Metric | Value |\n|--------|-------|\n| **Skills Archived** | 67 |\n| **Active Skills Remaining** | 374 (was 342 originally + some discovered) |\n| **New…",
+  "paused": false,
+  "run_count": 1
+}

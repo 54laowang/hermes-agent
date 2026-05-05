@@ -33,6 +33,32 @@ Generate images, video, audio, and 3D content through ComfyUI using the
 official `comfy-cli` for setup/lifecycle and direct REST/WebSocket API
 for workflow execution.
 
+## Overview
+
+ComfyUI is a node-based interface for Stable Diffusion and other generative models. This skill provides a **complete production pipeline** from installation to execution:
+
+- **Lifecycle management** via `comfy-cli` — install, launch, stop, manage nodes/models
+- **Workflow execution** via REST/WebSocket API — parameter injection, progress monitoring, output download
+- **Multi-platform support** — local GPU, Apple Silicon, AMD ROCm, or Comfy Cloud (RTX 6000 Pro)
+- **Comprehensive tooling** — 10+ scripts for hardware check, dependency resolution, batch processing, and more
+
+**Key differentiator**: The official CLI handles installation but lacks workflow execution. This skill bridges that gap with dedicated scripts for running ComfyUI workflows programmatically — perfect for agents, automation, and headless environments.
+
+**Supported models**: Stable Diffusion 1.5/2.x/3, SDXL, Flux (Dev/Schnell), Wan Video, Hunyuan Video, AnimateDiff, AudioCraft, and 1000+ community checkpoints.
+
+## When to Use
+
+- User asks to generate images with Stable Diffusion, SDXL, Flux, SD3, etc.
+- User wants to run a specific ComfyUI workflow file
+- User wants to chain generative steps (txt2img → upscale → face restore)
+- User needs ControlNet, inpainting, img2img, or other advanced pipelines
+- User asks to manage ComfyUI queue, check models, or install custom nodes
+- User wants video/audio/3D generation via AnimateDiff, Hunyuan, Wan, AudioCraft, etc.
+
+**Don't use for:**
+- Simple single-image generation without workflow customization (use `stable-diffusion-image-generation` instead)
+- Non-ComfyUI generative tasks
+
 ## What's in this skill
 
 **Reference docs (`references/`):**
@@ -56,19 +82,14 @@ for workflow execution.
 | `ws_monitor.py` | Real-time WebSocket viewer for executing jobs (live progress) |
 | `health_check.py` | Verification checklist runner — comfy-cli + server + models + smoke test |
 | `fetch_logs.py` | Pull traceback / status messages for a given prompt_id |
+| `run_batch.py` | Submit a workflow N times with sweeps, parallel up to your tier |
+| `ws_monitor.py` | Real-time WebSocket viewer for executing jobs (live progress) |
+| `health_check.py` | Verification checklist runner — comfy-cli + server + models + smoke test |
+| `fetch_logs.py` | Pull traceback / status messages for a given prompt_id |
 
 **Example workflows (`workflows/`):** SD 1.5, SDXL, Flux Dev, SDXL img2img,
 SDXL inpaint, ESRGAN upscale, AnimateDiff video, Wan T2V. See
 `workflows/README.md`.
-
-## When to Use
-
-- User asks to generate images with Stable Diffusion, SDXL, Flux, SD3, etc.
-- User wants to run a specific ComfyUI workflow file
-- User wants to chain generative steps (txt2img → upscale → face restore)
-- User needs ControlNet, inpainting, img2img, or other advanced pipelines
-- User asks to manage ComfyUI queue, check models, or install custom nodes
-- User wants video/audio/3D generation via AnimateDiff, Hunyuan, Wan, AudioCraft, etc.
 
 ## Architecture: Two Layers
 
@@ -591,16 +612,119 @@ python3 scripts/fetch_logs.py --tail-queue --host https://cloud.comfy.org
     Use `comfy --skip-prompt tracking disable` to skip non-interactively.
     `comfyui_setup.sh` does this for you.
 
+## One-Shot Recipes
+
+### Generate First Image (Local)
+
+```bash
+# 1. Install and launch
+bash scripts/comfyui_setup.sh
+comfy launch --background
+
+# 2. Download SDXL checkpoint
+comfy model download \
+  --url "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors" \
+  --relative-path models/checkpoints
+
+# 3. Run example workflow
+python3 scripts/run_workflow.py \
+  --workflow workflows/sdxl_txt2img.json \
+  --args '{"prompt": "a serene mountain lake at sunset", "seed": -1}' \
+  --output-dir ./outputs
+```
+
+### Generate First Image (Cloud)
+
+```bash
+# 1. Set API key
+export COMFY_CLOUD_API_KEY="your-key-here"
+
+# 2. Run workflow (cloud has models pre-installed)
+python3 scripts/run_workflow.py \
+  --workflow workflows/sdxl_txt2img.json \
+  --args '{"prompt": "a serene mountain lake at sunset", "seed": -1}' \
+  --host https://cloud.comfy.org \
+  --output-dir ./outputs
+```
+
+### Batch Generate Variations
+
+```bash
+# Generate 8 variations with random seeds
+python3 scripts/run_batch.py \
+  --workflow workflows/sdxl_txt2img.json \
+  --args '{"prompt": "cyberpunk cityscape", "steps": 25}' \
+  --count 8 --randomize-seed --parallel 3 \
+  --output-dir ./outputs/batch
+```
+
+### Image-to-Image Transformation
+
+```bash
+# Transform existing image
+python3 scripts/run_workflow.py \
+  --workflow workflows/sdxl_img2img.json \
+  --input-image image=./photo.png \
+  --args '{"prompt": "watercolor painting style", "denoise": 0.7}' \
+  --output-dir ./outputs
+```
+
+### Video Generation (AnimateDiff)
+
+```bash
+# Generate short video
+python3 scripts/run_workflow.py \
+  --workflow workflows/animatediff.json \
+  --args '{"prompt": "a cat walking in a garden", "frames": 16}' \
+  --timeout 900 \
+  --output-dir ./outputs/video
+```
+
+### Troubleshoot Missing Dependencies
+
+```bash
+# Auto-fix missing nodes/models for a workflow
+python3 scripts/auto_fix_deps.py workflow.json
+
+# Manual check
+python3 scripts/check_deps.py workflow.json
+```
+
 ## Verification Checklist
 
-Use `python3 scripts/health_check.py` to run the whole list at once. Manual:
+Use `python3 scripts/health_check.py` to run automated checks. Manual verification:
 
-- [ ] `hardware_check.py` verdict is `ok` OR the user explicitly chose Comfy Cloud
+### Pre-Installation
+
+- [ ] Hardware check passed: `python3 scripts/hardware_check.py` shows verdict `ok` or `marginal`
+- [ ] User chose installation path: Local (Paths B-E) or Cloud (Path A)
+- [ ] For local: Python 3.8+ available, GPU drivers installed
+
+### Installation
+
 - [ ] `comfy --version` works (or `uvx --from comfy-cli comfy --help`)
-- [ ] `curl http://HOST:PORT/system_stats` returns JSON
-- [ ] `comfy model list` shows at least one checkpoint (local) OR
-      `/api/experiment/models/checkpoints` returns models (cloud)
-- [ ] Workflow JSON is in API format
-- [ ] `check_deps.py` reports `is_ready: true` (or only `node_check_skipped`
-      on cloud free tier)
-- [ ] Test run with a small workflow completes; outputs land in `--output-dir`
+- [ ] ComfyUI installed: `comfy launch --background` succeeds
+- [ ] Server running: `curl http://127.0.0.1:8188/system_stats` returns JSON
+- [ ] At least one checkpoint: `comfy model list` shows model(s)
+
+### Workflow Execution
+
+- [ ] Workflow JSON is in API format (has `class_type` per node)
+- [ ] Dependencies met: `check_deps.py` reports `is_ready: true`
+- [ ] Parameters extracted: `extract_schema.py` lists controllable params
+- [ ] Test run succeeds: `run_workflow.py` completes with output in `--output-dir`
+
+### Cloud-Specific (if using Comfy Cloud)
+
+- [ ] API key set: `echo $COMFY_CLOUD_API_KEY` shows value
+- [ ] Auth works: `curl -H "X-API-Key: $COMFY_CLOUD_API_KEY" https://cloud.comfy.org/api/experiment/models/checkpoints` returns models
+- [ ] Tier allows execution: paid subscription active (free tier can't run workflows via API)
+
+### Troubleshooting
+
+If any check fails:
+1. Check the **Pitfalls** section above for common issues
+2. Run `python3 scripts/health_check.py --verbose` for detailed diagnostics
+3. For missing nodes/models: `python3 scripts/auto_fix_deps.py workflow.json`
+4. For server issues: `comfy stop && comfy launch --background`
+5. For cloud auth issues: verify API key and subscription status

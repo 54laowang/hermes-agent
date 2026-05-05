@@ -1,7 +1,7 @@
 ---
 name: ideation
 title: Creative Ideation — Constraint-Driven Project Generation
-description: "Generate project ideas via creative constraints."
+description: "\"通过创意约束生成项目创意。当用户说'我想做点什么'、'给我一个项目创意'、'我很无聊'、'我应该做什么'、'启发我'或任何'我有工具但没方向'的变体时使用。适用于代码、艺术、硬件、写作、工具和任何可制作的事物。\""
 version: 1.0.0
 author: SHL0MS
 license: MIT
@@ -13,10 +13,6 @@ metadata:
 ---
 
 # Creative Ideation
-
-## When to use
-
-Use when the user says 'I want to build something', 'give me a project idea', 'I'm bored', 'what should I make', 'inspire me', or any variant of 'I have tools but no direction'. Works for code, art, hardware, writing, tools, and anything that can be made.
 
 Generate project ideas through creative constraints. Constraint + direction = creativity.
 

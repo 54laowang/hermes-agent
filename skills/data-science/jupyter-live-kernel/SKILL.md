@@ -1,6 +1,10 @@
 ---
 name: jupyter-live-kernel
-description: "Iterative Python via live Jupyter kernel (hamelnb)."
+description: >
+  使用 hamelnb 通过实时 Jupyter 内核进行有状态的迭代式 Python 执行。
+  当任务涉及探索、迭代或检查中间结果时加载此 skill — 数据科学、ML 实验、
+  API 探索或逐步构建复杂代码。使用终端对实时 Jupyter 内核运行 CLI 命令。
+  无需新工具。
 version: 1.0.0
 author: Hermes Agent
 license: MIT

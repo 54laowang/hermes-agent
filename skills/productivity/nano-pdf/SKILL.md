@@ -1,6 +1,6 @@
 ---
 name: nano-pdf
-description: "Edit PDF text/typos/titles via nano-pdf CLI (NL prompts)."
+description: 使用自然语言指令通过 nano-pdf CLI 编辑 PDF。修改文本、修复错别字、更新标题，无需手动编辑即可更改特定页面的内容。
 version: 1.0.0
 author: community
 license: MIT

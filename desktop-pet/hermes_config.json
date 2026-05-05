@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "task_reminder": {
+    "enabled": true,
+    "success_animation": "idle",
+    "fail_animation": "sprint",
+    "voice": false
+  },
+  "schedule_reminder": {
+    "enabled": true,
+    "advance_minutes": 5,
+    "voice": false
+  },
+  "weather": {
+    "enabled": false,
+    "city": "北京",
+    "update_interval": 3600
+  },
+  "voice": {
+    "enabled": false,
+    "provider": "macos_say",
+    "language": "zh-CN"
+  }
+}

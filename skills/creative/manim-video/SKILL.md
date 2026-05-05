@@ -1,14 +1,10 @@
 ---
 name: manim-video
-description: "Manim CE animations: 3Blue1Brown math/algo videos."
+description: "使用 Manim Community Edition 的数学和技术动画生产流程。创建 3Blue1Brown 风格的解说视频、算法可视化、公式推导、架构图和数据故事。当用户请求：动画解说、数学动画、概念可视化、算法演示、技术讲解、3Blue1Brown 风格视频或任何包含几何/数学内容的程序化动画时使用。"
 version: 1.0.0
 ---
 
 # Manim Video Production Pipeline
-
-## When to use
-
-Use when users request: animated explanations, math animations, concept visualizations, algorithm walkthroughs, technical explainers, 3Blue1Brown style videos, or any programmatic animation with geometric/mathematical content. Creates 3Blue1Brown-style explainer videos, algorithm visualizations, equation derivations, architecture diagrams, and data stories using Manim Community Edition.
 
 ## Creative Standard
 

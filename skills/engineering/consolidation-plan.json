@@ -1,0 +1,137 @@
+[
+  {
+    "name": "engineering-reliability-operations",
+    "description": "站点可靠性工程完整框架 - 整合 SRE、故障响应、DevOps 自动化三大核心能力。覆盖 SLO/SLI、错误预算、故障指挥、CI/CD 流水线、可观测性、混沌工程，60+ 检查点。",
+    "source_skills": [
+      "engineering-sre",
+      "engineering-incident-response-commander",
+      "engineering-devops-automator"
+    ],
+    "modules": [
+      "SRE 核心实践（SLO/SLI、错误预算）",
+      "故障响应指挥（事故管理、复盘）",
+      "DevOps 自动化（CI/CD、基础设施）"
+    ],
+    "checkpoints": 60
+  },
+  {
+    "name": "engineering-data-platforms",
+    "description": "数据平台工程完整框架 - 整合数据管线、数据修复、湖仓架构三大核心能力。覆盖 ETL/ELT、Apache Spark、dbt、数据质量、实时处理，40+ 检查点。",
+    "source_skills": [
+      "engineering-data-engineer",
+      "engineering-ai-data-remediation-engineer"
+    ],
+    "modules": [
+      "数据管线架构（ETL/ELT、批处理/流处理）",
+      "数据质量管理（异常检测、自动修复）",
+      "湖仓架构（数据湖、数据仓库）"
+    ],
+    "checkpoints": 40
+  },
+  {
+    "name": "engineering-security-practices",
+    "description": "安全工程实践完整框架 - 整合应用安全、威胁检测、安全运营三大核心能力。覆盖威胁建模、漏洞评估、SIEM 规则、MITRE ATT&CK，45+ 检查点。",
+    "source_skills": [
+      "engineering-security-engineer",
+      "engineering-threat-detection-engineer"
+    ],
+    "modules": [
+      "应用安全（威胁建模、代码审查）",
+      "威胁检测（SIEM 规则、威胁狩猎）",
+      "安全运营（事件响应、合规审计）"
+    ],
+    "checkpoints": 45
+  },
+  {
+    "name": "engineering-embedded-systems",
+    "description": "嵌入式系统完整框架 - 整合固件开发、Linux 驱动、RTOS 三大核心能力。覆盖 ESP32、ARM Cortex-M、FreeRTOS、Zephyr、Yocto，50+ 检查点。",
+    "source_skills": [
+      "engineering-embedded-firmware-engineer",
+      "engineering-embedded-linux-driver-engineer"
+    ],
+    "modules": [
+      "固件开发（裸机、RTOS）",
+      "Linux 驱动开发（内核模块、设备树）",
+      "交叉编译与调试（Yocto、JTAG）"
+    ],
+    "checkpoints": 50
+  },
+  {
+    "name": "engineering-integration-development",
+    "description": "企业集成开发完整框架 - 整合钉钉、飞书、微信小程序三大平台集成能力。覆盖机器人、审批流、小程序、消息卡片、工作流自动化，55+ 检查点。",
+    "source_skills": [
+      "engineering-dingtalk-integration-developer",
+      "engineering-feishu-integration-developer",
+      "engineering-wechat-mini-program-developer"
+    ],
+    "modules": [
+      "钉钉集成（机器人、酷应用、审批流）",
+      "飞书集成（多维表格、消息卡片、SSO）",
+      "微信小程序（原生API、支付、云开发）"
+    ],
+    "checkpoints": 55
+  },
+  {
+    "name": "engineering-code-quality",
+    "description": "代码质量实践完整框架 - 整合代码审查、最小差异修复、代码理解三大核心能力。覆盖建设性反馈、范围控制、代码路径追踪，35+ 检查点。",
+    "source_skills": [
+      "engineering-code-reviewer",
+      "engineering-minimal-change-engineer",
+      "engineering-codebase-onboarding-engineer"
+    ],
+    "modules": [
+      "代码审查（正确性、可维护性、安全性）",
+      "最小差异修复（范围控制、防止蔓延）",
+      "代码库理解（路径追踪、架构认知）"
+    ],
+    "checkpoints": 35
+  },
+  {
+    "name": "engineering-architecture-design",
+    "description": "软件架构设计完整框架 - 整合系统架构、后端架构、领域驱动设计三大核心能力。覆盖微服务、API 设计、数据库架构、技术决策，50+ 检查点。",
+    "source_skills": [
+      "engineering-software-architect",
+      "engineering-backend-architect"
+    ],
+    "modules": [
+      "系统架构（微服务、事件驱动）",
+      "后端架构（API、数据库、缓存）",
+      "技术决策（ADR、技术选型）"
+    ],
+    "checkpoints": 50
+  },
+  {
+    "name": "engineering-frontend-fullstack",
+    "description": "前端全栈开发完整框架 - 整合前端开发、移动端开发、快速原型三大核心能力。覆盖 React/Vue/Angular、iOS/Android、MVP 快速验证，45+ 检查点。",
+    "source_skills": [
+      "engineering-frontend-developer",
+      "engineering-mobile-app-builder",
+      "engineering-rapid-prototyper"
+    ],
+    "modules": [
+      "前端开发（框架、性能优化）",
+      "移动端开发（原生、跨平台）",
+      "快速原型（MVP、概念验证）"
+    ],
+    "checkpoints": 45
+  },
+  {
+    "name": "engineering-specialized-domains",
+    "description": "专业领域工程完整框架 - 整合 CMS、IoT、区块链、语音AI、硬件设计五大专业领域能力。覆盖 Drupal/WordPress、MQTT、Solidity、Whisper、FPGA，70+ 检查点。",
+    "source_skills": [
+      "engineering-cms-developer",
+      "engineering-iot-solution-architect",
+      "engineering-solidity-smart-contract-engineer",
+      "engineering-voice-ai-integration-engineer",
+      "engineering-fpga-digital-design-engineer"
+    ],
+    "modules": [
+      "CMS 开发（Drupal、WordPress）",
+      "IoT 架构（设备接入、边缘计算）",
+      "区块链（智能合约、Gas 优化）",
+      "语音 AI（Whisper、转录流水线）",
+      "硬件设计（FPGA、ASIC）"
+    ],
+    "checkpoints": 70
+  }
+]

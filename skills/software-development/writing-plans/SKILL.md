@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: "Write implementation plans: bite-sized tasks, paths, code."
+description: 当有规格或需求需要多步骤任务时使用。创建全面的实现计划，包含小粒度任务、精确文件路径和完整代码示例。
 version: 1.1.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT

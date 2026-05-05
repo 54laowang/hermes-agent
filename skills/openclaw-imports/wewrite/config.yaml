@@ -1,0 +1,9 @@
+# WeWrite 配置
+# 微信公众号 API（发布草稿 + 数据统计必需）
+wechat:
+  appid: "wx4c160ba8cb860b8c"
+  secret: "3f1a021fc62cb8e120faa16fc0be3500"
+  author: "在人间清醒"  # 默认署名（可选）
+
+# 默认排版主题
+theme: "professional-clean"

@@ -1,6 +1,6 @@
 ---
 name: outlines
-description: "Outlines: structured JSON/regex/Pydantic LLM generation."
+description: 生成过程中保证有效的 JSON/XML/代码结构，使用 Pydantic 模型实现类型安全输出，支持本地模型 (Transformers, vLLM)，并使用 Outlines 最大化推理速度 — dottxt.ai 的结构化生成库。
 version: 1.0.0
 author: Orchestra Research
 license: MIT

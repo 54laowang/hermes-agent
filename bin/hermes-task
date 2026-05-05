@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""
+任务上下文 CLI 工具
+管理 L5 Context Memory
+
+Usage:
+    hermes-task list                    # 列出所有任务
+    hermes-task show [task_id]          # 显示任务详情
+    hermes-task create <goal>           # 创建新任务
+    hermes-task update <step> <status>  # 更新步骤状态
+    hermes-task complete                # 完成当前任务
+    hermes-task clear [task_id]         # 清理任务
+"""
+
+import sys
+import os
+import argparse
+from datetime import datetime
+
+# 添加 Hermes core 到路径
+sys.path.insert(0, os.path.expanduser("~/.hermes/core"))
+
+try:
+    from task_context import get_task_context_manager
+except ImportError:
+    print("❌ Error: task_context module not found")
+    print("   Please ensure ~/.hermes/core/task_context.py exists")
+    sys.exit(1)
+
+
+def cmd_list(args):
+    """列出任务"""
+    manager = get_task_context_manager()
+    tasks = manager.list_tasks(status=args.status)
+    
+    if not tasks:
+        print("📭 暂无任务")
+        return
+    
+    print(f"📋 任务列表 ({len(tasks)} 个)\n")
+    print(f"{'Task ID':<25} {'Goal':<40} {'Progress':<15} {'Updated'}")
+    print("-" * 100)
+    
+    for task in tasks:
+        task_id = task["task_id"]
+        goal = task["goal"][:37] + "..." if len(task["goal"]) > 40 else task["goal"]
+        progress = f"{task['progress']['completed']}/{task['progress']['total']}"
+        updated = datetime.fromisoformat(task["updated_at"]).strftime("%m-%d %H:%M")
+        
+        marker = "→" if task_id == manager.current_task_id else " "
+        print(f"{marker} {task_id:<23} {goal:<40} {progress:<15} {updated}")
+
+
+def cmd_show(args):
+    """显示任务详情"""
+    manager = get_task_context_manager()
+    task = manager.get_task(args.task_id)
+    
+    if not task:
+        print(f"❌ 任务不存在: {args.task_id}")
+        return
+    
+    print(task.get_context_prompt(max_results=10))
+
+
+def cmd_create(args):
+    """创建任务"""
+    manager = get_task_context_manager()
+    
+    constraints = args.constraints.split(",") if args.constraints else []
+    steps = args.steps.split(",") if args.steps else []
+    
+    task = manager.create_task(
+        goal=args.goal,
+        constraints=constraints,
+        steps=steps
+    )
+    
+    print(f"✅ 任务已创建: {task.task_id}")
+    print(f"   目标: {task.goal}")
+    if constraints:
+        print(f"   约束: {len(constraints)} 个")
+    if steps:
+        print(f"   步骤: {len(steps)} 个")
+
+
+def cmd_update(args):
+    """更新步骤"""
+    manager = get_task_context_manager()
+    manager.update_step(args.step, args.status, args.result)
+    
+    task = manager.get_task()
+    if task:
+        print(f"✅ 步骤已更新: {args.step} → {args.status}")
+
+
+def cmd_complete(args):
+    """完成任务"""
+    manager = get_task_context_manager()
+    manager.complete_task(final_result=args.result)
+    
+    print("✅ 任务已完成")
+
+
+def cmd_clear(args):
+    """清理任务"""
+    manager = get_task_context_manager()
+    manager.clear_task(args.task_id)
+    
+    print("🗑️  任务已清理")
+
+
+def cmd_current(args):
+    """显示当前任务"""
+    manager = get_task_context_manager()
+    task = manager.get_task()
+    
+    if not task:
+        print("📭 当前无活动任务")
+        return
+    
+    print(task.get_context_prompt())
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Hermes 任务上下文管理工具",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  hermes-task list                      # 列出所有任务
+  hermes-task current                   # 显示当前任务
+  hermes-task create "分析A股市场"       # 创建任务
+  hermes-task update "获取数据" completed  # 更新步骤
+  hermes-task complete                  # 完成任务
+        """
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="命令")
+    
+    # list
+    parser_list = subparsers.add_parser("list", help="列出任务")
+    parser_list.add_argument("--status", choices=["in_progress", "completed"], help="状态过滤")
+    parser_list.set_defaults(func=cmd_list)
+    
+    # show
+    parser_show = subparsers.add_parser("show", help="显示任务详情")
+    parser_show.add_argument("task_id", nargs="?", help="任务ID")
+    parser_show.set_defaults(func=cmd_show)
+    
+    # create
+    parser_create = subparsers.add_parser("create", help="创建任务")
+    parser_create.add_argument("goal", help="任务目标")
+    parser_create.add_argument("--constraints", help="约束条件（逗号分隔）")
+    parser_create.add_argument("--steps", help="任务步骤（逗号分隔）")
+    parser_create.set_defaults(func=cmd_create)
+    
+    # update
+    parser_update = subparsers.add_parser("update", help="更新步骤")
+    parser_update.add_argument("step", help="步骤名称")
+    parser_update.add_argument("status", choices=["pending", "in_progress", "completed", "failed"], help="状态")
+    parser_update.add_argument("--result", help="结果")
+    parser_update.set_defaults(func=cmd_update)
+    
+    # complete
+    parser_complete = subparsers.add_parser("complete", help="完成任务")
+    parser_complete.add_argument("--result", help="最终结果")
+    parser_complete.set_defaults(func=cmd_complete)
+    
+    # clear
+    parser_clear = subparsers.add_parser("clear", help="清理任务")
+    parser_clear.add_argument("task_id", nargs="?", help="任务ID")
+    parser_clear.set_defaults(func=cmd_clear)
+    
+    # current
+    parser_current = subparsers.add_parser("current", help="显示当前任务")
+    parser_current.set_defaults(func=cmd_current)
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

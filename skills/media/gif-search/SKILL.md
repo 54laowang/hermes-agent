@@ -1,6 +1,6 @@
 ---
 name: gif-search
-description: "Search/download GIFs from Tenor via curl + jq."
+description: 使用 curl 从 Tenor 搜索和下载 GIF。除 curl 和 jq 外无其他依赖。用于查找反应 GIF、创建视觉内容和在聊天中发送 GIF。
 version: 1.1.0
 author: Hermes Agent
 license: MIT
@@ -15,10 +15,6 @@ metadata:
 # GIF Search (Tenor API)
 
 Search and download GIFs directly via the Tenor API using curl. No extra tools needed.
-
-## When to use
-
-Useful for finding reaction GIFs, creating visual content, and sending GIFs in chat.
 
 ## Setup
 

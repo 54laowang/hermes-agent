@@ -1,6 +1,9 @@
 ---
 name: songwriting-and-ai-music
-description: "Songwriting craft and Suno AI music prompts."
+description: >
+  歌曲创作技巧和 AI 音乐生成提示词（以 Suno 为重点）。涵盖歌词结构、旋律发展、
+  流派惯例、情感共鸣和技术限制。用于创作歌曲、优化 Suno/其他 AI 音乐工具的提示词、
+  或将音乐理论与 AI 生成工作流相结合。
 tags: [songwriting, music, suno, parody, lyrics, creative]
 triggers:
   - writing a song

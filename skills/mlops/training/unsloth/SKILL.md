@@ -1,6 +1,6 @@
 ---
 name: unsloth
-description: "Unsloth: 2-5x faster LoRA/QLoRA fine-tuning, less VRAM."
+description: 使用 Unsloth 快速微调的专家指南 — 训练速度提升 2-5 倍、内存占用减少 50-80%、LoRA/QLoRA 优化
 version: 1.0.0
 author: Orchestra Research
 license: MIT
