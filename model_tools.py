@@ -38,6 +38,22 @@ logger = logging.getLogger(__name__)
 # advisory (#33924) is logged once per name, not on every tool recompute.
 _WARNED_DISABLED_BUNDLES: set = set()
 
+# ── PerformanceMonitor Integration ──────────────────────────────────
+# Zero-impact performance tracking for the self-improvement system.
+# Import failure (e.g., monitoring module not deployed) is caught at
+# call site so the main tool execution flow never breaks.
+try:
+    import sys
+    _monitoring_path = os.path.expanduser("~/.hermes/monitoring")
+    if _monitoring_path not in sys.path:
+        sys.path.insert(0, _monitoring_path)
+    from performance_monitor import track_tool as _track_tool_performance
+    _PERFORMANCE_MONITOR_AVAILABLE = True
+except Exception as _perf_import_err:
+    _track_tool_performance = None
+    _PERFORMANCE_MONITOR_AVAILABLE = False
+    logger.debug("PerformanceMonitor not available: %s", _perf_import_err)
+
 
 # =============================================================================
 # Async Bridging  (single source of truth -- used by registry.dispatch too)
@@ -1315,6 +1331,22 @@ def handle_function_call(
                     pass
         duration_ms = int((time.monotonic() - _dispatch_start) * 1000)
 
+        # ── Performance Tracking ──────────────────────────────────
+        # Track tool execution metrics for the self-improvement system.
+        # Fail-open: monitoring errors never affect tool execution.
+        if _PERFORMANCE_MONITOR_AVAILABLE and _track_tool_performance is not None:
+            try:
+                _status, _error_type, _error_message = _tool_result_observer_fields(result)
+                _success = (_status == "ok")
+                _track_tool_performance(
+                    tool_name=function_name,
+                    success=_success,
+                    duration=duration_ms / 1000.0,  # Convert to seconds
+                    error=_error_message if not _success else None
+                )
+            except Exception as _perf_err:
+                logger.debug("Performance tracking error (ignored): %s", _perf_err)
+
         _emit_post_tool_call_hook(
             function_name=function_name,
             function_args=function_args,
@@ -1367,6 +1399,19 @@ def handle_function_call(
     except Exception as e:
         error_msg = f"Error executing {function_name}: {str(e)}"
         logger.exception(error_msg)
+        
+        # ── Performance Tracking (Exception Path) ──────────────────────────────────
+        # Track tool execution failures for the self-improvement system.
+        if _PERFORMANCE_MONITOR_AVAILABLE and _track_tool_performance is not None:
+            try:
+                _track_tool_performance(
+                    tool_name=function_name,
+                    success=False,
+                    error=str(e)[:200]  # Limit error message length
+                )
+            except Exception as _perf_err:
+                logger.debug("Performance tracking error (ignored): %s", _perf_err)
+        
         return json.dumps({"error": _sanitize_tool_error(error_msg)}, ensure_ascii=False)
 
 
