@@ -20585,22 +20585,37 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
                 except Exception:
                     pass
                 return False
-            # Wait up to 10 seconds for the old process to exit.
+            # Wait up to 15 seconds for the old process to exit (increased from 10s).
+            # This allows WebSocket connections to properly drain before the new
+            # gateway attempts to connect to the same platforms (which would fail
+            # with "token already in use" errors).
             # ``os.kill(pid, 0)`` on Windows is NOT a no-op — use the
             # handle-based existence check instead.
             from gateway.status import _pid_exists
             old_gateway_exited = False
-            for _ in range(20):
+            for _ in range(30):  # 30 * 0.5s = 15s (was 20 * 0.5s = 10s)
                 if not _pid_exists(existing_pid):
                     old_gateway_exited = True
                     break  # Process is gone
                 time.sleep(0.5)
             else:
-                # Still alive after 10s — force kill
+                # Still alive after 15s — force kill and log warning
                 logger.warning(
-                    "Old gateway (PID %d) did not exit after SIGTERM, sending SIGKILL.",
+                    "Old gateway (PID %d) did not exit after SIGTERM + 15s wait, sending SIGKILL. "
+                    "This may indicate a stuck WebSocket connection or slow shutdown.",
                     existing_pid,
                 )
+                # Send alert if gateway_alerts are configured
+                try:
+                    from gateway.alerts import send_gateway_alert
+                    send_gateway_alert(
+                        level="warning",
+                        title="Gateway takeover required SIGKILL",
+                        message=f"Old gateway (PID {existing_pid}) did not exit gracefully after 15s. "
+                        f"New gateway (PID {os.getpid()}) proceeding with SIGKILL.",
+                    )
+                except Exception:
+                    pass  # Alerts are best-effort
                 try:
                     terminate_pid(existing_pid, force=True)
                 except ProcessLookupError:

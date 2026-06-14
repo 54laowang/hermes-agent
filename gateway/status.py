@@ -1182,9 +1182,9 @@ def release_all_scoped_locks(
 # shutdown on the same PID — and only within _TAKEOVER_MARKER_TTL_S.
 
 _TAKEOVER_MARKER_FILENAME = ".gateway-takeover.json"
-_TAKEOVER_MARKER_TTL_S = 60  # Marker older than this is treated as stale
+_TAKEOVER_MARKER_TTL_S = 120  # Increased from 60s to allow proper WebSocket drain
 _PLANNED_STOP_MARKER_FILENAME = ".gateway-planned-stop.json"
-_PLANNED_STOP_MARKER_TTL_S = 60
+_PLANNED_STOP_MARKER_TTL_S = 120
 
 
 def _get_takeover_marker_path() -> Path:
